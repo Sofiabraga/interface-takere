@@ -170,3 +170,104 @@ Erro no terminal ao executar `npm run start`; instalação de `expo-asset`; app 
 
 **Extra:**
 tive que ficar fazendo uns prompts a mais pq mesmo assim nao funcionou, versao incompativel do SDK, outros erros, etc  
+
+---
+
+### Interação C04
+
+**Categoria:**  
+Design visual / Geração de código / Arquitetura de interface
+
+**Tela ou funcionalidade:**  
+Base visual do aplicativo e evolução inicial da HomeScreen.
+
+**Objetivo do prompt:**  
+Solicitar a criação de uma fundação visual consistente para o app, com tema, componentes reutilizáveis e uma HomeScreen mais clara, acessível e adequada para avaliação futura com heurísticas de Nielsen e SUS.
+
+**Prompt enviado:**  
+Foi solicitado que Claude evoluísse o projeto com foco em UI/UX, clareza visual, consistência e boa usabilidade, considerando a paciente Maria Silva, 68 anos, com baixa familiaridade tecnológica. O pedido incluía a criação de arquivos de tema, componentes reutilizáveis e atualização da HomeScreen com saudação, resumo do dia, card de próximo medicamento e lista simples de medicamentos de hoje.
+
+**Resumo da resposta do Claude:**  
+Claude criou uma base visual em `src/theme`, incluindo paleta de cores, escala de espaçamento, tipografia, raio de borda e arquivo agregador. Também criou componentes reutilizáveis em `src/components`, como `ScreenContainer`, `AppHeader`, `Card`, `SectionTitle`, `PrimaryButton` e `StatusBadge`. Além disso, adicionou `medications.mock.ts` para alimentar a HomeScreen e atualizou `RootNavigator.tsx` para esconder o cabeçalho padrão da stack, evitando duplicidade com o `AppHeader`.
+
+A HomeScreen foi atualizada para apresentar uma sequência visual mais clara: saudação, resumo do dia, próximo medicamento em destaque e lista simples de medicamentos de hoje. A resposta também justificou decisões de UI/UX, como uso de fonte maior, botões com altura mínima adequada para toque, contraste elevado, status representados por cor e texto, ausência inicial de ícones, ausência de animações e foco em uma interface previsível para usuários idosos.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A solução melhorou significativamente a base visual, mas ainda usa dados mockados simples e pré-resolvidos para alimentar a HomeScreen. A lógica de medicamentos ainda não está organizada em uma camada de service, e a ação de “Marcar como tomado” ainda não foi implementada de forma funcional. A ausência de ícones e animações foi uma decisão consciente para reduzir complexidade, mas poderá ser revista posteriormente caso a interface precise de mais apoio visual. Também será necessário revisar manualmente se as cores, espaçamentos e textos realmente funcionam bem em dispositivos reais e com participantes.
+
+**Evidência:**  
+Arquivos criados ou modificados:
+- `src/theme/colors.ts`
+- `src/theme/spacing.ts`
+- `src/theme/typography.ts`
+- `src/theme/radius.ts`
+- `src/theme/index.ts`
+- `src/components/ScreenContainer.tsx`
+- `src/components/AppHeader.tsx`
+- `src/components/Card.tsx`
+- `src/components/SectionTitle.tsx`
+- `src/components/PrimaryButton.tsx`
+- `src/components/StatusBadge.tsx`
+- `src/mocks/medications.mock.ts`
+- `src/screens/HomeScreen.tsx`
+- `src/navigation/RootNavigator.tsx`
+
+**Prompt real:**
+ Agora quero evoluir o projeto com foco forte em UI/UX, clareza visual, consistência e boa usabilidade,    
+  pensando que o app será avaliado futuramente com heurísticas de Nielsen e SUS.                            
+                                                                                                            
+  Importante:                                                                                               
+  - O público principal da primeira versão deve ser a paciente Maria Silva, 68 anos, com baixa              
+  familiaridade tecnológica.                                                                                
+  - A interface deve ser simples, intuitiva, limpa, agradável e legível.                                    
+  - Quero priorizar clareza, acessibilidade e boa estética, sem exagerar em complexidade.                   
+                                                                                                            
+  Faça apenas esta próxima etapa:                                                                           
+                                                                                                            
+  1. Crie uma base visual do app em:                                                                        
+     - src/theme/colors.ts                                                                                  
+     - src/theme/spacing.ts                                                                                 
+     - src/theme/typography.ts                                                                              
+     - src/theme/radius.ts                                                                                  
+     - src/theme/index.ts                                                                                   
+                                                                                                            
+  2. Crie componentes reutilizáveis básicos em:                                                             
+     - src/components/ScreenContainer.tsx                                                                   
+     - src/components/AppHeader.tsx                                                                         
+     - src/components/Card.tsx                                                                              
+     - src/components/SectionTitle.tsx                                                                      
+     - src/components/PrimaryButton.tsx                                                                     
+     - src/components/StatusBadge.tsx                                                                       
+                                                                                                            
+  3. Atualize a HomeScreen para deixá-la visualmente mais consistente e mais adequada ao contexto do app,   
+  ainda de forma simples, contendo:                                                                         
+     - saudação para Maria Silva;                                                                           
+     - resumo textual do dia;                                                                               
+     - um card de “próximo medicamento” com dados mockados simples;                                         
+     - uma pequena seção “medicamentos de hoje” com poucos itens mockados;                                  
+     - botões/ações simples e claras;                                                                       
+     - textos em português.                                                                                 
+                                                                                                            
+  Restrições:                                                                                               
+  - Não implemente ainda lista completa, detalhe completo ou histórico completo.                            
+  - Não implemente backend.                                                                                 
+  - Não adicione bibliotecas extras sem justificar.                                                         
+  - Não use expo-* diretamente nas screens.                                                                 
+  - Não acople regras de negócio na tela.                                                                   
+  - Priorize boa hierarquia visual, contraste, legibilidade e consistência.                                 
+  - Status devem ser comunicados por texto e cor.                                                           
+  - O visual deve ser limpo e fácil de explicar no TCC.                                                     
+                                                                                                            
+  Ao final, inclua:                                                                                         
+  1. explicação breve das decisões de UI/UX tomadas;                                                        
+  2. como essas decisões ajudam em usabilidade; 
+

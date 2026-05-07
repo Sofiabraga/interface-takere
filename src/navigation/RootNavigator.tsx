@@ -6,12 +6,11 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   return (
-    <Stack.Navigator initialRouteName={Routes.Home}>
-      <Stack.Screen
-        name={Routes.Home}
-        component={HomeScreen}
-        options={{ title: 'Início' }}
-      />
+    <Stack.Navigator
+      initialRouteName={Routes.Home}
+      screenOptions={{ headerShown: false }}
+    >
+      <Stack.Screen name={Routes.Home} component={HomeScreen} />
     </Stack.Navigator>
   );
 }
