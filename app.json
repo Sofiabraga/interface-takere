@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Takere mHealth",
+    "slug": "takere-mhealth",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "plugins": [
+      "expo-asset"
+    ]
+  }
+}
