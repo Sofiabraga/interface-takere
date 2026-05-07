@@ -271,3 +271,151 @@ Arquivos criados ou modificados:
   1. explicação breve das decisões de UI/UX tomadas;                                                        
   2. como essas decisões ajudam em usabilidade; 
 
+---
+
+### Interação C05
+
+**Categoria:**  
+Design visual / Geração de código / Arquitetura / Refatoração
+
+**Tela ou funcionalidade:**  
+Dashboard inicial de medicamentos do dia na HomeScreen.
+
+**Objetivo do prompt:**  
+Transformar a HomeScreen em uma tela inicial mais completa, bonita e consistente, com foco em UI/UX, organização dos medicamentos do dia, dados mockados estruturados, service, hook e componentes reutilizáveis.
+
+**Prompt enviado:**  
+Foi solicitado que Claude evoluísse a HomeScreen para parecer mais próxima de uma interface real de gestão de medicamentos, adequada para avaliação futura com heurísticas de Nielsen e SUS. O pedido incluía organizar mocks de medicamentos, horários e registros; criar `MedicationService`; criar `useTodayMedications`; criar componentes visuais específicos; e atualizar a HomeScreen sem adicionar backend, persistência, bibliotecas novas ou regras clínicas.
+
+**Resumo da resposta do Claude:**  
+Claude reorganizou os dados mockados em três arquivos separados: `medications.mock.ts`, `medicationSchedules.mock.ts` e `medicationLogs.mock.ts`. Também criou `MedicationService.ts`, responsável por combinar os mocks e gerar dados preparados para a interface, como medicamentos do dia, próximo medicamento e resumo diário. Foi criado o hook `useTodayMedications.ts` para servir como ponte entre a HomeScreen e a camada de dados, evitando que a tela acesse mocks diretamente.
+
+Além disso, Claude criou componentes específicos para a tela inicial: `MedicationSummaryCard`, `NextMedicationCard`, `MedicationListItem` e `StatusLegend`. A HomeScreen foi reorganizada em uma sequência mais clara: saudação, próximo medicamento em destaque, resumo do dia, lista de medicamentos de hoje, legenda de status e ação secundária. A resposta também explicou decisões de UI/UX relacionadas a hierarquia visual, legibilidade, espaçamento, destaque do próximo medicamento, uso de status com texto e cor, e adequação às heurísticas de Nielsen e ao SUS.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A tela ficou visualmente mais completa e melhor organizada, mas a ação “Marcar como tomado” ainda não altera o estado da aplicação, apenas exibe um alerta. Isso pode ser uma limitação importante antes da avaliação com usuários, pois botões sem efeito real podem prejudicar a percepção de utilidade e confiança. A regra que prioriza medicamentos atrasados como “próximo medicamento” também precisa ser validada, pois pode ser adequada do ponto de vista de organização, mas talvez gere ansiedade em usuários idosos. Além disso, o hook ainda usa dados derivados de mocks estáticos, sem persistência ou atualização dinâmica.
+
+**Evidência:**  
+Arquivos criados:
+- `src/mocks/medicationSchedules.mock.ts`
+- `src/mocks/medicationLogs.mock.ts`
+- `src/services/MedicationService.ts`
+- `src/hooks/useTodayMedications.ts`
+- `src/components/MedicationSummaryCard.tsx`
+- `src/components/NextMedicationCard.tsx`
+- `src/components/MedicationListItem.tsx`
+- `src/components/StatusLegend.tsx`
+
+Arquivos modificados:
+- `src/mocks/medications.mock.ts`
+- `src/mocks/patients.mock.ts`
+- `src/components/SectionTitle.tsx`
+- `src/components/AppHeader.tsx`
+- `src/screens/HomeScreen.tsx`
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque mostra o uso de Claude não apenas para gerar código, mas também para apoiar decisões de arquitetura e design de interface. A resposta conectou explicitamente decisões visuais com heurísticas de Nielsen, como visibilidade do estado do sistema, correspondência com o mundo real, consistência, reconhecimento em vez de memorização, estética minimalista e ajuda/documentação. Também relacionou escolhas da interface com possíveis impactos no SUS, especialmente em itens ligados à facilidade de uso, confiança e necessidade de suporte.
+
+**Possíveis riscos ou limitações:**  
+- A ausência de persistência limita a avaliação funcional da interface.
+- A ação principal ainda não modifica o estado do medicamento.
+- O uso de cores verde, amarelo e vermelho exige cuidado para não depender apenas da cor como forma de comunicação.
+- A lista pode ficar extensa se houver muitos medicamentos, prejudicando a visibilidade da legenda e do resumo.
+- A regra de priorizar medicamentos atrasados precisa ser validada do ponto de vista de experiência do usuário.
+- A estrutura atual ainda depende de mocks e deverá ser adaptada futuramente para backend ou persistência local.
+
+**Prompt de fato:**
+Agora quero fazer a próxima etapa do app com foco em deixar a HomeScreen mais parecida com uma interface real, bonita, consistente e adequada para avaliação de IHC.
+
+Contexto:
+Estou desenvolvendo um TCC em Ciência da Computação sobre o uso de Claude no desenvolvimento e avaliação de uma interface mHealth. A interface será avaliada posteriormente com heurísticas de Nielsen e SUS. Um dos avaliadores é da área de IHC, então a UI/UX precisa ser bem cuidada, clara, intuitiva e visualmente consistente.
+
+A paciente principal da primeira versão continua sendo Maria Silva, 68 anos, baixa familiaridade tecnológica. A interface deve ser acessível, legível e simples, mas sem parecer rudimentar.
+
+Objetivo desta etapa:
+Transformar a HomeScreen em um dashboard inicial de medicamentos do dia, visualmente mais completo e organizado, sem ainda criar todas as telas do app.
+
+Implemente apenas esta etapa:
+
+1. Organize dados mockados de medicamentos em arquivos separados:
+   - src/mocks/medications.mock.ts
+   - src/mocks/medicationSchedules.mock.ts
+   - src/mocks/medicationLogs.mock.ts
+
+2. Crie uma camada de serviço:
+   - src/services/MedicationService.ts
+
+   Esse service deve:
+   - usar os mocks internamente;
+   - retornar os medicamentos do dia da paciente atual;
+   - retornar o próximo medicamento em destaque;
+   - retornar um resumo do dia com quantidade de medicamentos tomados, pendentes e atrasados;
+   - não depender de backend;
+   - não usar AsyncStorage ainda;
+   - não conter regras clínicas, apenas organização e apresentação dos dados mockados.
+
+3. Crie um hook:
+   - src/hooks/useTodayMedications.ts
+
+   Esse hook deve:
+   - consumir o MedicationService;
+   - entregar para a HomeScreen os dados já preparados;
+   - evitar que a tela tenha regra de negócio ou acesse mocks diretamente.
+
+4. Crie componentes visuais reutilizáveis específicos para esta tela:
+   - src/components/MedicationSummaryCard.tsx
+   - src/components/NextMedicationCard.tsx
+   - src/components/MedicationListItem.tsx
+   - src/components/StatusLegend.tsx
+
+5. Atualize a HomeScreen para usar esses componentes.
+
+A HomeScreen deve conter:
+
+- saudação clara para Maria;
+- texto curto explicando o objetivo da tela;
+- card em destaque para o próximo medicamento;
+- resumo visual do dia com tomados, pendentes e atrasados;
+- lista curta de medicamentos de hoje;
+- legenda simples dos status;
+- botões ou ações claras, mas sem implementar navegação complexa ainda.
+
+Diretrizes de UI/UX:
+
+- A tela deve parecer mais polida e menos rudimentar.
+- Use boa hierarquia visual.
+- Use espaçamento generoso.
+- Use cards consistentes.
+- Use textos em português.
+- Use status com cor + texto, nunca apenas cor.
+- Evite excesso de informação.
+- Evite termos clínicos complexos.
+- Priorize fonte legível e elementos fáceis de tocar.
+- Pense em uma pessoa idosa usando a interface, mas sem infantilizar o design.
+- A interface deve transmitir calma, clareza e confiança.
+- A ação principal da tela deve ser fácil de identificar.
+- Não use ícones por enquanto, para evitar adicionar dependências.
+- Não use animações por enquanto.
+- Não adicione bibliotecas novas.
+- Não use expo-* diretamente em screens ou components.
+- Não implemente prescrição, recomendação clínica ou alteração de tratamento.
+- Não use dados reais de saúde.
+- Não implemente login, backend ou persistência.
+
+Importante:
+Se precisar criar tipos auxiliares para a Home, coloque-os em local adequado e explique a decisão. Não coloque lógica de montagem de dados diretamente na HomeScreen.
+
+Ao responder:
+1. Liste os arquivos criados/modificados.
+2. Explique brevemente as decisões de UI/UX tomadas.
+3. Explique como essas decisões ajudam na futura avaliação por heurísticas de Nielsen e SUS.
+4. Inclua uma checklist de teste local.

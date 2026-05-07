@@ -8,3 +8,5 @@ export const mariaSilva: Patient = {
 };
 
 export const patientsMock: Patient[] = [mariaSilva];
+
+export const currentPatient: Patient = mariaSilva;

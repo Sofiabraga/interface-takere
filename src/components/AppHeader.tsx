@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
-    ...typography.display,
+    ...typography.title,
     color: colors.textPrimary,
   },
   subtitle: {
