@@ -2,7 +2,6 @@ import { MedicationStatus } from '../domain/enums/MedicationStatus';
 import { Medication } from '../domain/models/Medication';
 import { MedicationLog } from '../domain/models/MedicationLog';
 import { MedicationSchedule } from '../domain/models/MedicationSchedule';
-import { medicationLogsMock } from '../mocks/medicationLogs.mock';
 import { medicationSchedulesMock } from '../mocks/medicationSchedules.mock';
 import { medicationsMock } from '../mocks/medications.mock';
 
@@ -55,13 +54,13 @@ function joinLog(log: MedicationLog): TodayMedicationView | null {
   };
 }
 
-function getLogsForPatient(patientId: string): MedicationLog[] {
+function getLogsForPatient(patientId: string, logs: MedicationLog[]): MedicationLog[] {
   const patientScheduleIds = new Set(
     medicationSchedulesMock
       .filter((sched) => sched.patientId === patientId)
       .map((sched) => sched.id),
   );
-  return medicationLogsMock.filter((log) => patientScheduleIds.has(log.scheduleId));
+  return logs.filter((log) => patientScheduleIds.has(log.scheduleId));
 }
 
 function buildSummary(items: TodayMedicationView[]): DailySummary {
@@ -81,8 +80,8 @@ function pickNext(items: TodayMedicationView[]): TodayMedicationView | null {
 }
 
 export const MedicationService = {
-  getTodayDashboard(patientId: string): TodayDashboard {
-    const items = getLogsForPatient(patientId)
+  getTodayDashboard(patientId: string, logs: MedicationLog[]): TodayDashboard {
+    const items = getLogsForPatient(patientId, logs)
       .map(joinLog)
       .filter((view): view is TodayMedicationView => view !== null)
       .sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));

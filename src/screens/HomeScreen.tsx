@@ -1,6 +1,7 @@
 import { Alert } from 'react-native';
 import { AppHeader } from '../components/AppHeader';
 import { Card } from '../components/Card';
+import { FeedbackBanner } from '../components/FeedbackBanner';
 import { MedicationListItem } from '../components/MedicationListItem';
 import { MedicationSummaryCard } from '../components/MedicationSummaryCard';
 import { NextMedicationCard } from '../components/NextMedicationCard';
@@ -11,15 +12,15 @@ import { StatusLegend } from '../components/StatusLegend';
 import { useTodayMedications } from '../hooks/useTodayMedications';
 
 export function HomeScreen() {
-  const { patient, dashboard } = useTodayMedications();
-  const firstName = patient.name.split(' ')[0];
+  const {
+    patient,
+    dashboard,
+    lastTaken,
+    markAsTaken,
+    undoLastTaken,
+  } = useTodayMedications();
 
-  function handleMarkAsTaken() {
-    Alert.alert(
-      'Em breve',
-      'O registro de medicamento ainda está em desenvolvimento.',
-    );
-  }
+  const firstName = patient.name.split(' ')[0];
 
   function handleViewAll() {
     Alert.alert(
@@ -35,10 +36,14 @@ export function HomeScreen() {
         subtitle="Aqui você acompanha seus medicamentos de hoje."
       />
 
-      <NextMedicationCard
-        next={dashboard.next}
-        onMarkAsTaken={handleMarkAsTaken}
-      />
+      {lastTaken ? (
+        <FeedbackBanner
+          message={`${lastTaken.medicationName} marcado como tomado.`}
+          onUndo={undoLastTaken}
+        />
+      ) : null}
+
+      <NextMedicationCard next={dashboard.next} onMarkAsTaken={markAsTaken} />
 
       <MedicationSummaryCard summary={dashboard.summary} />
 

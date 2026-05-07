@@ -419,3 +419,74 @@ Ao responder:
 2. Explique brevemente as decisões de UI/UX tomadas.
 3. Explique como essas decisões ajudam na futura avaliação por heurísticas de Nielsen e SUS.
 4. Inclua uma checklist de teste local.
+
+---
+
+### Interação C07
+
+**Categoria:**  
+Geração de código / Interação funcional / UX feedback / Acessibilidade
+
+**Tela ou funcionalidade:**  
+Ação de marcar medicamento como tomado na HomeScreen.
+
+**Objetivo do prompt:**  
+Tornar funcional a ação principal da HomeScreen, permitindo que a usuária marque um medicamento como tomado, veja a atualização imediata da interface e tenha feedback claro sobre a ação realizada.
+
+**Prompt enviado:**  
+Foi solicitado que Claude implementasse a ação “Marcar como tomado” de forma local, em memória, sem backend e sem persistência. O pedido incluía atualizar o status do medicamento, recalcular o próximo medicamento, atualizar o resumo do dia, atualizar a lista de medicamentos, registrar `takenAt`, exibir feedback visual claro e, se possível, permitir desfazer a última ação.
+
+**Resumo da resposta do Claude:**  
+Claude modificou a lógica da aplicação para que o estado dos registros de medicamentos seja mantido em memória no hook `useTodayMedications`. O `MedicationService` passou a receber os logs como parâmetro, tornando-se uma função pura que monta o dashboard a partir dos dados atuais. A HomeScreen passou a consumir o hook estendido e a renderizar um novo componente `FeedbackBanner` quando um medicamento é marcado como tomado.
+
+A ação “Marcar como tomado” agora atualiza o status do medicamento para `taken`, registra `takenAt` com a data/hora atual, recalcula o resumo diário, atualiza o próximo medicamento em destaque e altera o status do item correspondente na lista. Também foi implementado um mecanismo simples de “Desfazer” para a última ação, disponível por 6 segundos no banner de feedback.
+
+Além disso, Claude criou um `FeedbackBanner` acessível, com mensagem textual, cor consistente com o status “Tomado” e suporte a leitores de tela por meio de `AccessibilityInfo.announceForAccessibility`, `accessibilityRole="alert"` e `accessibilityLiveRegion="polite"`.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A ação agora funciona corretamente em memória, mas ainda não possui persistência. Ao recarregar o app, o estado volta aos mocks iniciais, o que é adequado para esta fase, mas precisa ser registrado como limitação. O mecanismo de desfazer cobre apenas a última ação realizada, o que simplifica a implementação, mas pode ser insuficiente em fluxos mais complexos. A ação de marcar como tomado existe apenas no card de próximo medicamento, e não em cada item da lista, o que reduz risco de erro, mas limita a flexibilidade da usuária.
+
+**Evidência:**  
+Arquivos modificados:
+- `src/services/MedicationService.ts`
+- `src/hooks/useTodayMedications.ts`
+- `src/components/NextMedicationCard.tsx`
+- `src/screens/HomeScreen.tsx`
+
+Arquivo criado:
+- `src/components/FeedbackBanner.tsx`
+
+**Checklist de validação local:**  
+- `npm run typecheck` passa sem erros.
+- `npm run start` abre o Metro sem erro.
+- O app abre no Expo Go.
+- O estado inicial mostra Losartana como próximo medicamento atrasado.
+- Ao tocar em “Marcar como tomado”, aparece o banner de confirmação.
+- O próximo medicamento em destaque muda.
+- O resumo do dia é atualizado.
+- O item correspondente na lista muda para “Tomado”.
+- Ao tocar em “Desfazer” dentro de 6 segundos, o estado anterior é restaurado.
+- Se a usuária não tocar em “Desfazer”, o banner desaparece e o estado permanece atualizado.
+- Ao recarregar o app, os dados voltam ao estado inicial dos mocks.
+- Em VoiceOver/TalkBack, o banner é anunciado quando aparece.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é importante porque transforma a interface de uma visualização estática em uma interface interativa. A ação implementada contribui diretamente para a heurística de visibilidade do estado do sistema, pois a interface responde imediatamente após o toque. Também contribui para controle e liberdade do usuário, pela presença da opção “Desfazer”, e para prevenção/recuperação de erros, já que a usuária pode corrigir rapidamente uma ação equivocada.
+
+Do ponto de vista do SUS, a funcionalidade pode contribuir para maior percepção de facilidade de uso, integração das funções e confiança, pois a ação principal produz uma resposta clara, previsível e reversível.
+
+**Possíveis riscos ou limitações:**  
+- A ausência de persistência impede que o registro sobreviva ao fechamento ou recarregamento do app.
+- O botão “Marcar como tomado” aparece apenas no medicamento em destaque.
+- O desfazer é limitado à última ação e expira após 6 segundos.
+- O feedback depende de leitura do banner, embora também seja reforçado por mudança visual no resumo, card e lista.
+- Antes da avaliação com usuários, será necessário decidir se a ausência de persistência é aceitável ou se deve ser implementado ao menos armazenamento local simples.

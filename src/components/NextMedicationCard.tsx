@@ -7,7 +7,7 @@ import { StatusBadge } from './StatusBadge';
 
 interface NextMedicationCardProps {
   next: TodayMedicationView | null;
-  onMarkAsTaken: () => void;
+  onMarkAsTaken: (logId: string) => void;
 }
 
 export function NextMedicationCard({ next, onMarkAsTaken }: NextMedicationCardProps) {
@@ -42,7 +42,10 @@ export function NextMedicationCard({ next, onMarkAsTaken }: NextMedicationCardPr
       ) : null}
 
       <View style={styles.actions}>
-        <PrimaryButton label="Marcar como tomado" onPress={onMarkAsTaken} />
+        <PrimaryButton
+          label="Marcar como tomado"
+          onPress={() => onMarkAsTaken(next.id)}
+        />
       </View>
     </Card>
   );
