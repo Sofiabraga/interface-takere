@@ -1,0 +1,93 @@
+import { useState } from 'react';
+import { StyleSheet, Text } from 'react-native';
+import { AppHeader } from '../components/AppHeader';
+import { Card } from '../components/Card';
+import { MedicationListItem } from '../components/MedicationListItem';
+import { MedicationSummaryCard } from '../components/MedicationSummaryCard';
+import { ScreenContainer } from '../components/ScreenContainer';
+import { StatusFilterTabs } from '../components/StatusFilterTabs';
+import { StatusLegend } from '../components/StatusLegend';
+import {
+  MedicationListFilter,
+  useMedicationList,
+} from '../hooks/useMedicationList';
+import { useAppNavigation } from '../navigation/useAppNavigation';
+import { colors, typography } from '../theme';
+
+export function MedicationListScreen() {
+  const navigation = useAppNavigation();
+  const [filter, setFilter] = useState<MedicationListFilter>('all');
+  const { items, summary } = useMedicationList(filter);
+
+  return (
+    <ScreenContainer>
+      <AppHeader
+        title="Medicamentos de hoje"
+        subtitle="Veja todos os medicamentos do seu dia."
+        onBack={() => navigation.goBack()}
+      />
+
+      <MedicationSummaryCard summary={summary} />
+
+      <StatusFilterTabs value={filter} onChange={setFilter} />
+
+      {items.length === 0 ? (
+        <Card>
+          <Text style={styles.emptyTitle}>{getEmptyTitle(filter)}</Text>
+          <Text style={styles.emptyMessage}>{getEmptyMessage(filter)}</Text>
+        </Card>
+      ) : (
+        <Card>
+          {items.map((item, index) => (
+            <MedicationListItem
+              key={item.id}
+              item={item}
+              showDivider={index > 0}
+            />
+          ))}
+        </Card>
+      )}
+
+      <StatusLegend />
+    </ScreenContainer>
+  );
+}
+
+function getEmptyTitle(filter: MedicationListFilter): string {
+  switch (filter) {
+    case 'pending':
+      return 'Nenhum medicamento pendente';
+    case 'taken':
+      return 'Nenhum medicamento marcado como tomado';
+    case 'late':
+      return 'Nenhum medicamento atrasado';
+    case 'all':
+    default:
+      return 'Nenhum medicamento agendado';
+  }
+}
+
+function getEmptyMessage(filter: MedicationListFilter): string {
+  switch (filter) {
+    case 'pending':
+      return 'Você não tem medicamentos pendentes neste momento.';
+    case 'taken':
+      return 'Você ainda não marcou medicamentos como tomados hoje.';
+    case 'late':
+      return 'Você não tem medicamentos atrasados. Continue assim!';
+    case 'all':
+    default:
+      return 'Não há medicamentos agendados para hoje.';
+  }
+}
+
+const styles = StyleSheet.create({
+  emptyTitle: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+  },
+  emptyMessage: {
+    ...typography.body,
+    color: colors.textSecondary,
+  },
+});

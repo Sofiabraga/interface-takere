@@ -1,4 +1,3 @@
-import { Alert } from 'react-native';
 import { AppHeader } from '../components/AppHeader';
 import { Card } from '../components/Card';
 import { FeedbackBanner } from '../components/FeedbackBanner';
@@ -10,8 +9,11 @@ import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionTitle } from '../components/SectionTitle';
 import { StatusLegend } from '../components/StatusLegend';
 import { useTodayMedications } from '../hooks/useTodayMedications';
+import { Routes } from '../navigation/routes';
+import { useAppNavigation } from '../navigation/useAppNavigation';
 
 export function HomeScreen() {
+  const navigation = useAppNavigation();
   const {
     patient,
     dashboard,
@@ -23,10 +25,7 @@ export function HomeScreen() {
   const firstName = patient.name.split(' ')[0];
 
   function handleViewAll() {
-    Alert.alert(
-      'Em breve',
-      'A lista completa de medicamentos será disponibilizada em uma próxima etapa.',
-    );
+    navigation.navigate(Routes.MedicationList);
   }
 
   return (
@@ -61,7 +60,7 @@ export function HomeScreen() {
       <StatusLegend />
 
       <PrimaryButton
-        label="Ver todos os medicamentos"
+        label="Ver agenda completa de hoje"
         variant="secondary"
         onPress={handleViewAll}
       />

@@ -564,3 +564,86 @@ Do ponto de vista do SUS, a refatoração pode contribuir para a percepção de 
 - O timer de feedback fica no provider e pode ter comportamento diferente se o app for colocado em segundo plano.
 - Futuramente, pode ser necessário separar melhor responsabilidades, como mover `findMedicationName` para um utilitário ou service.
 - Caso o histórico cresça ou a aplicação passe a ter mais telas, talvez seja necessário avaliar outra estratégia de estado, embora isso não seja necessário nesta fase.
+
+---
+
+### Interação C09
+
+**Categoria:**  
+Geração de código / Nova tela / Navegação / UI/UX
+
+**Tela ou funcionalidade:**  
+Tela de lista completa dos medicamentos do dia.
+
+**Objetivo do prompt:**  
+Criar uma tela com a lista completa dos medicamentos de hoje, com filtros por status, navegação a partir da HomeScreen e integração com o estado compartilhado dos medicamentos.
+
+**Prompt enviado:**  
+Foi solicitado que Claude criasse a `MedicationListScreen`, mantendo consistência visual com a HomeScreen e usando o mesmo estado compartilhado do `MedicationProvider`. O pedido incluía lista completa dos medicamentos do dia, filtros por status, legenda, estado vazio amigável, atualização da navegação e conexão do botão “Ver todos os medicamentos” da Home com a nova tela.
+
+**Resumo da resposta do Claude:**  
+Claude criou a tela `MedicationListScreen`, que exibe o resumo dos medicamentos do dia, filtros por status, lista filtrada e legenda dos status. Também criou o hook `useMedicationList`, responsável por consumir o estado compartilhado via `MedicationProvider`, derivar os dados com `MedicationService` e aplicar o filtro selecionado. Foi criado o componente `StatusFilterTabs`, funcionando como um controle segmentado com as opções Todos, Pendentes, Tomados e Atrasados.
+
+A navegação foi atualizada com a rota `MedicationList` em `routes.ts` e o registro da tela em `RootNavigator.tsx`. Também foi criado o hook `useAppNavigation`, para centralizar a navegação tipada. A `HomeScreen` foi modificada para que o botão “Ver todos os medicamentos” navegue para a nova tela, substituindo o comportamento anterior de `Alert`.
+
+O `AppHeader` também foi ajustado para aceitar uma prop opcional `onBack`, permitindo exibir um botão textual “← Voltar”, mais claro e acessível para a persona Maria Silva.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A tela de lista foi implementada apenas como leitura, sem permitir marcar medicamentos como tomados diretamente nos itens. Essa decisão reduz carga cognitiva e evita toques acidentais, mas pode limitar a eficiência de usuários que esperam realizar ações diretamente na lista. Também será necessário avaliar se quatro filtros em uma única linha funcionam bem em telas pequenas. Além disso, a lista mostra apenas os medicamentos do dia, não um catálogo completo de medicamentos do paciente.
+
+**Evidência:**  
+Arquivos criados:
+- `src/screens/MedicationListScreen.tsx`
+- `src/hooks/useMedicationList.ts`
+- `src/components/StatusFilterTabs.tsx`
+- `src/navigation/useAppNavigation.ts`
+
+Arquivos modificados:
+- `src/navigation/routes.ts`
+- `src/navigation/RootNavigator.tsx`
+- `src/components/AppHeader.tsx`
+- `src/screens/HomeScreen.tsx`
+
+**Checklist de validação local:**  
+- `npm run typecheck` passa sem erros.
+- `npm run start` abre o Metro sem erro.
+- A HomeScreen abre normalmente.
+- O botão “Ver todos os medicamentos” navega para a lista.
+- A tela mostra o título “Medicamentos de hoje”.
+- O botão “← Voltar” funciona e retorna para a Home.
+- O filtro “Todos” mostra os 4 medicamentos do dia.
+- O filtro “Pendentes” mostra apenas os medicamentos pendentes.
+- O filtro “Tomados” mostra apenas os medicamentos tomados.
+- O filtro “Atrasados” mostra apenas os medicamentos atrasados.
+- O resumo do dia permanece estável ao trocar de filtro.
+- Depois de marcar um medicamento como tomado na Home, a lista reflete o estado atualizado.
+- Quando um filtro não possui resultados, aparece um estado vazio amigável.
+- Os status continuam sendo apresentados com texto e cor.
+- O console não apresenta warnings relevantes.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque expande o app de uma única tela para um fluxo navegável, mantendo consistência visual e compartilhamento de estado. A criação da `MedicationListScreen` permite que tarefas de avaliação com usuários sejam mais realistas, como localizar medicamentos pendentes, verificar medicamentos tomados e compreender status do dia.
+
+Do ponto de vista das heurísticas de Nielsen, a tela contribui para visibilidade do estado do sistema, consistência e padrões, controle e liberdade do usuário, reconhecimento em vez de memorização e estética minimalista. O botão textual “Voltar” e os filtros simples também favorecem clareza e previsibilidade.
+
+Do ponto de vista do SUS, a tela pode contribuir para a percepção de integração entre as funções, facilidade de uso e confiança, pois o estado visto na Home é refletido corretamente na lista.
+
+**Possíveis riscos ou limitações:**  
+- A lista é apenas de medicamentos do dia, não de todos os medicamentos cadastrados do paciente.
+- Os itens da lista ainda não navegam para uma tela de detalhe.
+- A tela não permite marcar medicamento como tomado diretamente na lista.
+- Quatro filtros em uma única linha podem ficar apertados em telas menores.
+- O filtro selecionado não é persistido ao sair/reabrir o app.
+- A escolha de `accessibilityRole="tab"` nos filtros pode precisar ser revisada caso se queira uma semântica mais próxima de radio buttons.
+
+**OBS:**
+Isso aqui eu fiz uma interacoes pra ver a melhor forma de fazer isso. Eu mesma sugeri usar os botoes ja disponiveis com numero de "Tomados" etc como forma de clicar e ver as opcoes
