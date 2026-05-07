@@ -490,3 +490,77 @@ Do ponto de vista do SUS, a funcionalidade pode contribuir para maior percepçã
 - O desfazer é limitado à última ação e expira após 6 segundos.
 - O feedback depende de leitura do banner, embora também seja reforçado por mudança visual no resumo, card e lista.
 - Antes da avaliação com usuários, será necessário decidir se a ausência de persistência é aceitável ou se deve ser implementado ao menos armazenamento local simples.
+
+---
+
+### Interação C08
+
+**Categoria:**  
+Refatoração arquitetural / Estado compartilhado / Organização de camadas
+
+**Tela ou funcionalidade:**  
+Centralização do estado dos medicamentos para uso compartilhado entre telas futuras.
+
+**Objetivo do prompt:**  
+Criar uma camada de estado compartilhado para os registros de medicamentos, evitando que o estado ficasse isolado no hook `useTodayMedications` e preparando o app para futuras telas como lista de medicamentos, detalhe do medicamento e histórico.
+
+**Prompt enviado:**  
+Foi solicitado que Claude criasse um `MedicationProvider` com Context API para centralizar os logs de medicamentos, a ação de marcar como tomado, a opção de desfazer, o feedback temporário e o estado `lastTaken`. Também foi solicitado que `useTodayMedications` passasse a consumir esse provider, mantendo o `MedicationService` como camada pura de derivação dos dados e preservando o comportamento atual da HomeScreen.
+
+**Resumo da resposta do Claude:**  
+Claude criou o arquivo `src/contexts/MedicationProvider.tsx`, centralizando o estado mutável dos medicamentos em memória. O provider inicializa os logs a partir dos mocks, mantém os registros em estado local, expõe `logs`, `markAsTaken`, `undoLastTaken`, `dismissFeedback` e `lastTaken`, além de controlar o timer do feedback e a referência da última ação para desfazer.
+
+O hook `useTodayMedications` foi refatorado para deixar de manter estado próprio. Ele passou a consumir o `MedicationProvider` e a usar o `MedicationService` apenas para derivar o dashboard com base nos logs atuais. O `App.tsx` foi atualizado para envolver a navegação com o `MedicationProvider`, mantendo a estrutura com `SafeAreaProvider`, `NavigationContainer` e `RootNavigator`.
+
+A `HomeScreen` não foi alterada, pois a interface pública do hook foi mantida. Isso indica que a refatoração ficou bem encapsulada e preservou o contrato usado pela camada de UI.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A solução melhora a arquitetura e prepara o app para múltiplas telas, mas o estado ainda é mantido apenas em memória. Ao recarregar o app, os dados voltam ao estado inicial dos mocks. Isso é aceitável nesta fase, mas precisa ser registrado como limitação antes da avaliação com participantes. Também será necessário revisar futuramente se a Context API continuará suficiente caso o app cresça ou tenha histórico mais extenso.
+
+**Evidência:**  
+Arquivo criado:
+- `src/contexts/MedicationProvider.tsx`
+
+Arquivos modificados:
+- `src/hooks/useTodayMedications.ts`
+- `App.tsx`
+
+A `HomeScreen` foi mantida sem alterações, demonstrando que a refatoração não exigiu mudanças na camada de apresentação.
+
+**Checklist de validação local:**  
+- `npm run typecheck` passa sem erros.
+- `npm run start` abre o Metro sem erro.
+- O app abre no Expo Go sem tela vermelha.
+- O estado inicial continua igual ao anterior.
+- O card principal mostra o medicamento atrasado inicial.
+- Ao tocar em “Marcar como tomado”, o banner aparece.
+- O próximo medicamento é atualizado.
+- O resumo do dia é atualizado.
+- O item correspondente na lista muda para “Tomado”.
+- Ao tocar em “Desfazer” antes de 6 segundos, o estado anterior é restaurado.
+- Ao aguardar 6 segundos, o banner desaparece e o estado permanece atualizado.
+- Ao recarregar o app, os dados voltam ao estado inicial dos mocks.
+- O console não mostra warnings relevantes de React.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque mostra o uso de Claude para apoiar uma decisão arquitetural, não apenas para gerar interface visual. A centralização do estado evita que diferentes telas tenham versões divergentes dos mesmos dados, o que é importante para a consistência da experiência do usuário.
+
+Do ponto de vista das heurísticas de Nielsen, essa mudança contribui principalmente para consistência e padrões, visibilidade do estado do sistema e prevenção de erros. Se a usuária marcar um medicamento como tomado na Home e depois acessar uma futura tela de detalhe ou histórico, o app deverá apresentar o mesmo estado em todas as telas.
+
+Do ponto de vista do SUS, a refatoração pode contribuir para a percepção de integração entre as funções do sistema, redução de inconsistências e aumento da confiança no uso.
+
+**Possíveis riscos ou limitações:**  
+- O estado ainda é apenas em memória e é perdido ao recarregar o app.
+- A Context API pode gerar re-renderizações desnecessárias se o app crescer muito, embora seja adequada para o escopo atual.
+- O timer de feedback fica no provider e pode ter comportamento diferente se o app for colocado em segundo plano.
+- Futuramente, pode ser necessário separar melhor responsabilidades, como mover `findMedicationName` para um utilitário ou service.
+- Caso o histórico cresça ou a aplicação passe a ter mais telas, talvez seja necessário avaliar outra estratégia de estado, embora isso não seja necessário nesta fase.
