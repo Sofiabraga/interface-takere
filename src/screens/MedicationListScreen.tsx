@@ -11,6 +11,7 @@ import {
   MedicationListFilter,
   useMedicationList,
 } from '../hooks/useMedicationList';
+import { Routes } from '../navigation/routes';
 import { useAppNavigation } from '../navigation/useAppNavigation';
 import { colors, typography } from '../theme';
 
@@ -43,6 +44,11 @@ export function MedicationListScreen() {
               key={item.id}
               item={item}
               showDivider={index > 0}
+              onPress={(tapped) =>
+                navigation.navigate(Routes.MedicationDetail, {
+                  logId: tapped.id,
+                })
+              }
             />
           ))}
         </Card>

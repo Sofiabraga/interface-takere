@@ -26,6 +26,29 @@ export interface TodayDashboard {
   summary: DailySummary;
 }
 
+export interface MedicationDetailView {
+  id: string;
+  medication: Medication;
+  scheduledTime: string;
+  takenAtTime?: string;
+  status: MedicationStatus;
+}
+
+export interface HistoryEntryView {
+  id: string;
+  medication: Medication;
+  scheduledTime: string;
+  takenAtTime: string;
+  takenAtIso: string;
+  status: MedicationStatus;
+}
+
+export interface MedicationHistoryView {
+  patientId: string;
+  entries: HistoryEntryView[];
+  total: number;
+}
+
 function findMedication(medicationId: string): Medication | undefined {
   return medicationsMock.find((med) => med.id === medicationId);
 }
@@ -91,6 +114,56 @@ export const MedicationService = {
       items,
       summary: buildSummary(items),
       next: pickNext(items),
+    };
+  },
+
+  getMedicationDetail(
+    logId: string,
+    logs: MedicationLog[],
+  ): MedicationDetailView | null {
+    const log = logs.find((entry) => entry.id === logId);
+    if (!log) return null;
+    const schedule = findSchedule(log.scheduleId);
+    if (!schedule) return null;
+    const medication = findMedication(schedule.medicationId);
+    if (!medication) return null;
+    return {
+      id: log.id,
+      medication,
+      scheduledTime: formatScheduledTime(log.scheduledFor),
+      takenAtTime: log.takenAt ? formatScheduledTime(log.takenAt) : undefined,
+      status: log.status,
+    };
+  },
+
+  getMedicationHistory(
+    patientId: string,
+    logs: MedicationLog[],
+  ): MedicationHistoryView {
+    const entries: HistoryEntryView[] = getLogsForPatient(patientId, logs)
+      .filter((log) => log.status === 'taken' && log.takenAt)
+      .map((log): HistoryEntryView | null => {
+        const schedule = findSchedule(log.scheduleId);
+        if (!schedule) return null;
+        const medication = findMedication(schedule.medicationId);
+        if (!medication) return null;
+        const takenAtIso = log.takenAt as string;
+        return {
+          id: log.id,
+          medication,
+          scheduledTime: formatScheduledTime(log.scheduledFor),
+          takenAtTime: formatScheduledTime(takenAtIso),
+          takenAtIso,
+          status: log.status,
+        };
+      })
+      .filter((entry): entry is HistoryEntryView => entry !== null)
+      .sort((a, b) => b.takenAtIso.localeCompare(a.takenAtIso));
+
+    return {
+      patientId,
+      entries,
+      total: entries.length,
     };
   },
 };

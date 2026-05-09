@@ -647,3 +647,78 @@ Do ponto de vista do SUS, a tela pode contribuir para a percepção de integraç
 
 **OBS:**
 Isso aqui eu fiz uma interacoes pra ver a melhor forma de fazer isso. Eu mesma sugeri usar os botoes ja disponiveis com numero de "Tomados" etc como forma de clicar e ver as opcoes
+
+---
+
+### Interação C11
+
+**Categoria:**  
+Geração de código / Nova tela / Arquitetura / Design de UI/UX
+
+**Tela ou funcionalidade:**  
+Tela de histórico de tomadas.
+
+**Objetivo do prompt:**  
+Criar uma tela simples de histórico para que a usuária consiga visualizar os medicamentos registrados como tomados, mantendo consistência visual com HomeScreen, MedicationListScreen e MedicationDetailScreen, e usando o estado compartilhado do aplicativo.
+
+**Prompt enviado:**  
+Foi solicitado que Claude criasse a `HistoryScreen`, com lista de medicamentos registrados como tomados, horário previsto, horário de registro, status, estado vazio amigável e navegação a partir da HomeScreen. Também foi pedido que a tela consumisse o estado compartilhado via hook/service, sem acessar mocks diretamente, sem implementar backend, persistência, notificações ou funcionalidades clínicas.
+
+**Resumo da resposta do Claude:**  
+Claude criou a tela `HistoryScreen` e o hook `useMedicationHistory`. Também modificou o `MedicationService` para adicionar os tipos `HistoryEntryView`, `MedicationHistoryView` e o método `getMedicationHistory(patientId, logs)`, responsável por derivar o histórico a partir dos logs atuais.
+
+A navegação foi atualizada com a rota `History` em `routes.ts` e o registro da tela em `RootNavigator.tsx`. A HomeScreen passou a exibir o botão secundário “Ver histórico de tomadas”, permitindo acessar a nova tela.
+
+A `HistoryScreen` mostra os medicamentos registrados como tomados, incluindo nome, dose, horário previsto, horário em que foi marcado como tomado e status. A tela também possui estado vazio amigável, botão “← Voltar” e usa linguagem simples, como “Histórico de tomadas”, “Horário previsto” e “Registrado às”, evitando termos clínicos como “prescrição”, “conduta” ou “adesão terapêutica”.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A tela de histórico funciona apenas com dados em memória e volta ao estado inicial dos mocks ao recarregar o app. Além disso, o histórico atual é apenas do dia, não multi-dia. Também será necessário validar se a ordenação por horário de registro mais recente primeiro é a mais compreensível para a persona Maria Silva, pois alguns usuários podem esperar ordem cronológica do dia.
+
+**Evidência:**  
+Arquivos criados:
+- `src/screens/HistoryScreen.tsx`
+- `src/hooks/useMedicationHistory.ts`
+
+Arquivos modificados:
+- `src/services/MedicationService.ts`
+- `src/navigation/routes.ts`
+- `src/navigation/RootNavigator.tsx`
+- `src/screens/HomeScreen.tsx`
+
+**Checklist de validação local:**  
+- `npx expo start` sobe sem erros.
+- A HomeScreen renderiza normalmente.
+- O botão “Ver histórico de tomadas” aparece na Home.
+- Ao tocar no botão, a `HistoryScreen` é aberta.
+- O cabeçalho mostra “Histórico de tomadas”.
+- O botão “← Voltar” retorna para a Home.
+- O histórico inicial mostra os medicamentos já marcados como tomados nos mocks.
+- Ao marcar um novo medicamento como tomado na Home ou na tela de detalhe, ele aparece no histórico.
+- Ao desfazer uma tomada pelo `FeedbackBanner`, o item correspondente sai do histórico.
+- A lista de medicamentos tomados aparece ordenada pelo horário de registro.
+- A tela mostra estado vazio amigável quando não houver tomadas registradas.
+- `npx tsc --noEmit` passa sem erros.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque completa uma parte importante do fluxo de uso: além de visualizar medicamentos e registrar tomadas, a usuária passa a conseguir consultar o que já foi registrado. Isso torna a interface mais próxima de um artefato avaliável, pois permite tarefas como verificar se um medicamento já foi tomado ou consultar o horário em que a tomada foi registrada.
+
+Do ponto de vista das heurísticas de Nielsen, a tela contribui para visibilidade do estado do sistema, reconhecimento em vez de memorização, consistência e padrões, correspondência com o mundo real e design minimalista. A tela também reforça controle e previsibilidade, pois reflete imediatamente ações feitas em outras telas.
+
+Do ponto de vista do SUS, a tela pode contribuir para percepção de integração entre funcionalidades, facilidade de uso e confiança, já que a usuária consegue verificar o resultado de suas ações em uma área específica de histórico.
+
+**Possíveis riscos ou limitações:**  
+- O histórico não é persistido após recarregar o app.
+- O histórico mostra apenas registros do dia.
+- A ordenação por registro mais recente primeiro pode precisar ser validada com usuários.
+- O texto “Você registrou X medicamentos como tomados hoje” pode soar didático demais e talvez precise de ajuste após teste piloto.
+- Dois botões secundários empilhados na Home podem deixar o final da tela um pouco carregado visualmente.
+- Como o histórico só mostra medicamentos tomados, o `StatusBadge` “Tomado” é redundante, mas foi mantido para consistência visual e reforço textual.

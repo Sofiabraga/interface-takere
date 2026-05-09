@@ -28,6 +28,10 @@ export function HomeScreen() {
     navigation.navigate(Routes.MedicationList);
   }
 
+  function handleViewHistory() {
+    navigation.navigate(Routes.History);
+  }
+
   return (
     <ScreenContainer>
       <AppHeader
@@ -53,6 +57,11 @@ export function HomeScreen() {
             key={item.id}
             item={item}
             showDivider={index > 0}
+            onPress={(tapped) =>
+              navigation.navigate(Routes.MedicationDetail, {
+                logId: tapped.id,
+              })
+            }
           />
         ))}
       </Card>
@@ -63,6 +72,12 @@ export function HomeScreen() {
         label="Ver agenda completa de hoje"
         variant="secondary"
         onPress={handleViewAll}
+      />
+
+      <PrimaryButton
+        label="Ver histórico de tomadas"
+        variant="secondary"
+        onPress={handleViewHistory}
       />
     </ScreenContainer>
   );
