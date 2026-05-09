@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MedicationListFilter } from '../hooks/useMedicationList';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, radius, spacing } from '../theme';
 
 interface FilterOption {
   value: MedicationListFilter;
@@ -39,6 +39,8 @@ export function StatusFilterTabs({ value, onChange }: StatusFilterTabsProps) {
           >
             <Text
               numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
               style={[styles.tabLabel, selected && styles.tabLabelSelected]}
             >
               {option.label}
@@ -74,7 +76,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
   },
   tabLabel: {
-    ...typography.caption,
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 22,
     color: colors.textPrimary,
   },
   tabLabelSelected: {

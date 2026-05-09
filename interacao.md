@@ -656,7 +656,7 @@ Isso aqui eu fiz uma interacoes pra ver a melhor forma de fazer isso. Eu mesma s
 Geração de código / Nova tela / Arquitetura / Design de UI/UX
 
 **Tela ou funcionalidade:**  
-Tela de histórico de tomadas.
+Tela de histórico de hoje.
 
 **Objetivo do prompt:**  
 Criar uma tela simples de histórico para que a usuária consiga visualizar os medicamentos registrados como tomados, mantendo consistência visual com HomeScreen, MedicationListScreen e MedicationDetailScreen, e usando o estado compartilhado do aplicativo.
@@ -667,9 +667,9 @@ Foi solicitado que Claude criasse a `HistoryScreen`, com lista de medicamentos r
 **Resumo da resposta do Claude:**  
 Claude criou a tela `HistoryScreen` e o hook `useMedicationHistory`. Também modificou o `MedicationService` para adicionar os tipos `HistoryEntryView`, `MedicationHistoryView` e o método `getMedicationHistory(patientId, logs)`, responsável por derivar o histórico a partir dos logs atuais.
 
-A navegação foi atualizada com a rota `History` em `routes.ts` e o registro da tela em `RootNavigator.tsx`. A HomeScreen passou a exibir o botão secundário “Ver histórico de tomadas”, permitindo acessar a nova tela.
+A navegação foi atualizada com a rota `History` em `routes.ts` e o registro da tela em `RootNavigator.tsx`. A HomeScreen passou a exibir o botão secundário “Ver histórico de hoje", permitindo acessar a nova tela.
 
-A `HistoryScreen` mostra os medicamentos registrados como tomados, incluindo nome, dose, horário previsto, horário em que foi marcado como tomado e status. A tela também possui estado vazio amigável, botão “← Voltar” e usa linguagem simples, como “Histórico de tomadas”, “Horário previsto” e “Registrado às”, evitando termos clínicos como “prescrição”, “conduta” ou “adesão terapêutica”.
+A `HistoryScreen` mostra os medicamentos registrados como tomados, incluindo nome, dose, horário previsto, horário em que foi marcado como tomado e status. A tela também possui estado vazio amigável, botão “← Voltar” e usa linguagem simples, como “Histórico de hoje, “Horário previsto” e “Registrado às”, evitando termos clínicos como “prescrição”, “conduta” ou “adesão terapêutica”.
 
 **Decisão tomada:**  
 Aceito com pequenas alterações.
@@ -697,9 +697,9 @@ Arquivos modificados:
 **Checklist de validação local:**  
 - `npx expo start` sobe sem erros.
 - A HomeScreen renderiza normalmente.
-- O botão “Ver histórico de tomadas” aparece na Home.
+- O botão “Ver histórico de hoje aparece na Home.
 - Ao tocar no botão, a `HistoryScreen` é aberta.
-- O cabeçalho mostra “Histórico de tomadas”.
+- O cabeçalho mostra “Histórico de hoje.
 - O botão “← Voltar” retorna para a Home.
 - O histórico inicial mostra os medicamentos já marcados como tomados nos mocks.
 - Ao marcar um novo medicamento como tomado na Home ou na tela de detalhe, ele aparece no histórico.
@@ -722,3 +722,80 @@ Do ponto de vista do SUS, a tela pode contribuir para percepção de integraçã
 - O texto “Você registrou X medicamentos como tomados hoje” pode soar didático demais e talvez precise de ajuste após teste piloto.
 - Dois botões secundários empilhados na Home podem deixar o final da tela um pouco carregado visualmente.
 - Como o histórico só mostra medicamentos tomados, o `StatusBadge` “Tomado” é redundante, mas foi mantido para consistência visual e reforço textual.
+
+---
+
+### Interação C12
+
+**Categoria:**  
+Refatoração / Design visual / Polimento de UI/UX / Consistência de interface
+
+**Tela ou funcionalidade:**  
+Polimento visual geral e revisão de consistência entre HomeScreen, MedicationListScreen, MedicationDetailScreen e HistoryScreen.
+
+**Objetivo do prompt:**  
+Revisar a interface como um todo, identificando inconsistências visuais, problemas de microcopy, acessibilidade, estados vazios e pequenos pontos de UI/UX que pudessem prejudicar a avaliação futura com heurísticas de Nielsen e SUS.
+
+**Prompt enviado:**  
+Foi solicitado que Claude realizasse uma revisão geral de UI/UX e polimento visual do app, sem adicionar novas funcionalidades grandes. O pedido incluía revisar consistência entre telas, microcopy, acessibilidade, estados vazios, feedbacks, componentes reutilizáveis, HomeScreen, MedicationListScreen, MedicationDetailScreen e HistoryScreen.
+
+**Resumo da resposta do Claude:**  
+Claude criou o componente reutilizável `EmptyState`, centralizando a aparência e o comportamento dos estados vazios usados em diferentes telas. Também ajustou o `StatusFilterTabs`, aumentando a fonte dos filtros de 14 para 16, usando peso 600 e adicionando `adjustsFontSizeToFit` com `minimumFontScale={0.85}` para reduzir risco de truncamento em telas menores.
+
+Na HomeScreen, Claude agrupou os dois botões secundários sob a seção “Mais opções”, melhorando a organização visual do rodapé e mantendo a ação principal “Marcar como tomado” como elemento dominante. Na MedicationListScreen, o subtítulo foi reescrito para “Toque em um medicamento para ver os detalhes.”, tornando mais clara a interação principal da tela. A tela também passou a usar o novo `EmptyState`. A HistoryScreen e a MedicationDetailScreen também foram ajustadas para reutilizar o `EmptyState`, reduzindo duplicação de estilos e aumentando a consistência visual.
+
+A resposta também identificou pontos fracos, como estados vazios duplicados, fonte pequena nos filtros, subtítulo redundante na lista, botões secundários soltos na Home e risco de truncamento no filtro “Atrasados”.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+As mudanças foram intencionalmente pequenas e seguras, sem alterar estrutura, navegação, provider ou lógica funcional. Ainda será necessário validar em dispositivos reais se o tamanho dos filtros é suficiente e se `adjustsFontSizeToFit` se comporta bem tanto em iOS quanto em Android. Também será necessário verificar com participantes se o texto “Mais opções” é claro o suficiente e se o subtítulo instrucional da lista não fica excessivamente didático após o primeiro uso.
+
+**Evidência:**  
+Arquivo criado:
+- `src/components/EmptyState.tsx`
+
+Arquivos modificados:
+- `src/components/StatusFilterTabs.tsx`
+- `src/screens/HomeScreen.tsx`
+- `src/screens/MedicationListScreen.tsx`
+- `src/screens/HistoryScreen.tsx`
+- `src/screens/MedicationDetailScreen.tsx`
+
+**Checklist de validação local:**  
+- `npx expo start` sobe sem erros.
+- A HomeScreen continua renderizando normalmente.
+- O card do próximo medicamento continua sendo o elemento visualmente mais importante.
+- A Home mostra a seção “Mais opções” acima dos botões secundários.
+- O botão “Ver agenda completa de hoje” continua navegando para a lista.
+- O botão “Ver histórico de hoje continua navegando para o histórico.
+- A MedicationListScreen mostra o novo subtítulo “Toque em um medicamento para ver os detalhes.”.
+- Os filtros aparecem maiores, em peso semibold, e não truncam em telas pequenas.
+- Os estados vazios da lista, histórico e detalhe usam o mesmo padrão visual.
+- A ação “Marcar como tomado” continua funcionando.
+- O `FeedbackBanner` continua aparecendo e permitindo desfazer.
+- O histórico continua refletindo as ações realizadas.
+- Os botões “← Voltar” continuam funcionando nas telas internas.
+- `npx tsc --noEmit` passa sem erros.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque representa uma etapa de refinamento da interface após a implementação do fluxo principal. Em vez de adicionar novas funcionalidades, Claude foi usado para revisar consistência visual, reduzir duplicação, melhorar legibilidade e ajustar textos da interface. Isso pode ser discutido no TCC como uso do LLM em uma etapa de polimento e avaliação preliminar de qualidade de interface.
+
+Do ponto de vista das heurísticas de Nielsen, a interação contribui especialmente para consistência e padrões, design estético e minimalista, reconhecimento em vez de memorização, visibilidade do estado do sistema e ajuda/documentação. O componente `EmptyState`, por exemplo, evita que telas vazias sejam percebidas como erro ou travamento.
+
+Do ponto de vista do SUS, as mudanças podem contribuir para percepção de facilidade de uso, redução de inconsistências, menor necessidade de suporte e menor sensação de complexidade.
+
+**Possíveis riscos ou limitações:**  
+- O texto “Mais opções” pode ser genérico demais e deve ser validado em teste piloto.
+- A fonte de 16 px nos filtros pode ainda ser pequena para usuários com baixa visão.
+- O subtítulo “Toque em um medicamento para ver os detalhes.” pode parecer instrucional demais depois do primeiro uso.
+- `adjustsFontSizeToFit` pode se comportar de forma diferente entre iOS e Android.
+- A etapa foi de polimento pequeno; problemas maiores de usabilidade ainda precisam ser identificados por revisão heurística ou teste com participantes.
+- A ordenação do histórico e o comportamento da legenda/status ainda precisam ser validados com usuários.

@@ -3,6 +3,7 @@ import { RouteProp, useRoute } from '@react-navigation/native';
 import { StyleSheet, Text, View } from 'react-native';
 import { AppHeader } from '../components/AppHeader';
 import { Card } from '../components/Card';
+import { EmptyState } from '../components/EmptyState';
 import { FeedbackBanner } from '../components/FeedbackBanner';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
@@ -30,12 +31,10 @@ export function MedicationDetailScreen() {
           subtitle="Detalhes da agenda de hoje"
           onBack={() => navigation.goBack()}
         />
-        <Card>
-          <Text style={styles.cardTitle}>Medicamento não encontrado</Text>
-          <Text style={styles.bodyText}>
-            Este item não está mais disponível na agenda de hoje.
-          </Text>
-        </Card>
+        <EmptyState
+          title="Medicamento não encontrado"
+          message="Este item não está mais disponível na agenda de hoje."
+        />
       </ScreenContainer>
     );
   }
@@ -128,10 +127,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     ...typography.bodyStrong,
     color: colors.textPrimary,
-  },
-  bodyText: {
-    ...typography.body,
-    color: colors.textSecondary,
   },
   fieldStack: {
     gap: spacing.md,

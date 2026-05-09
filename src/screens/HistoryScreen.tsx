@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { AppHeader } from '../components/AppHeader';
 import { Card } from '../components/Card';
+import { EmptyState } from '../components/EmptyState';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { StatusBadge } from '../components/StatusBadge';
 import { useMedicationHistory } from '../hooks/useMedicationHistory';
@@ -15,18 +16,16 @@ export function HistoryScreen() {
   return (
     <ScreenContainer>
       <AppHeader
-        title="Histórico de tomadas"
+        title="Histórico de hoje"
         subtitle="Veja os medicamentos que você marcou como tomados hoje."
         onBack={() => navigation.goBack()}
       />
 
       {history.total === 0 ? (
-        <Card>
-          <Text style={styles.emptyTitle}>Nenhuma tomada registrada</Text>
-          <Text style={styles.emptyMessage}>
-            Quando você marcar um medicamento como tomado, ele aparece aqui.
-          </Text>
-        </Card>
+        <EmptyState
+          title="Nenhuma tomada registrada"
+          message="Quando você marcar um medicamento como tomado, ele aparece aqui."
+        />
       ) : (
         <>
           <Text style={styles.summaryText}>
@@ -100,14 +99,6 @@ function summaryLabel(total: number): string {
 
 const styles = StyleSheet.create({
   summaryText: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-  emptyTitle: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
-  },
-  emptyMessage: {
     ...typography.body,
     color: colors.textSecondary,
   },

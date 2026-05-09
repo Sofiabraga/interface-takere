@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
 import { AppHeader } from '../components/AppHeader';
 import { Card } from '../components/Card';
+import { EmptyState } from '../components/EmptyState';
 import { MedicationListItem } from '../components/MedicationListItem';
 import { MedicationSummaryCard } from '../components/MedicationSummaryCard';
 import { ScreenContainer } from '../components/ScreenContainer';
@@ -13,7 +13,6 @@ import {
 } from '../hooks/useMedicationList';
 import { Routes } from '../navigation/routes';
 import { useAppNavigation } from '../navigation/useAppNavigation';
-import { colors, typography } from '../theme';
 
 export function MedicationListScreen() {
   const navigation = useAppNavigation();
@@ -24,7 +23,7 @@ export function MedicationListScreen() {
     <ScreenContainer>
       <AppHeader
         title="Medicamentos de hoje"
-        subtitle="Veja todos os medicamentos do seu dia."
+        subtitle="Toque em um medicamento para ver os detalhes."
         onBack={() => navigation.goBack()}
       />
 
@@ -33,10 +32,10 @@ export function MedicationListScreen() {
       <StatusFilterTabs value={filter} onChange={setFilter} />
 
       {items.length === 0 ? (
-        <Card>
-          <Text style={styles.emptyTitle}>{getEmptyTitle(filter)}</Text>
-          <Text style={styles.emptyMessage}>{getEmptyMessage(filter)}</Text>
-        </Card>
+        <EmptyState
+          title={getEmptyTitle(filter)}
+          message={getEmptyMessage(filter)}
+        />
       ) : (
         <Card>
           {items.map((item, index) => (
@@ -86,14 +85,3 @@ function getEmptyMessage(filter: MedicationListFilter): string {
       return 'Não há medicamentos agendados para hoje.';
   }
 }
-
-const styles = StyleSheet.create({
-  emptyTitle: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
-  },
-  emptyMessage: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-});

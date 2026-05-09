@@ -68,14 +68,14 @@ export function HomeScreen() {
 
       <StatusLegend />
 
+      <SectionTitle>Mais opções</SectionTitle>
       <PrimaryButton
         label="Ver agenda completa de hoje"
         variant="secondary"
         onPress={handleViewAll}
       />
-
       <PrimaryButton
-        label="Ver histórico de tomadas"
+        label="Ver histórico de hoje"
         variant="secondary"
         onPress={handleViewHistory}
       />
