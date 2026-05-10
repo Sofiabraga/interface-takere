@@ -799,3 +799,349 @@ Do ponto de vista do SUS, as mudanças podem contribuir para percepção de faci
 - `adjustsFontSizeToFit` pode se comportar de forma diferente entre iOS e Android.
 - A etapa foi de polimento pequeno; problemas maiores de usabilidade ainda precisam ser identificados por revisão heurística ou teste com participantes.
 - A ordenação do histórico e o comportamento da legenda/status ainda precisam ser validados com usuários.
+
+---
+
+### Interação C13
+
+**Categoria:**  
+Arquitetura / Backend / Autenticação / Persistência / Planejamento técnico
+
+**Tela ou funcionalidade:**  
+Definição da arquitetura de backend com login e persistência para o app mHealth.
+
+**Objetivo do prompt:**  
+Definir uma arquitetura mínima de backend para o TCC, com autenticação, persistência de dados e usuários fictícios, sem implementar código ainda. O objetivo foi planejar como migrar os mocks locais para um backend simples, mantendo o foco do trabalho na interface e na avaliação de usabilidade.
+
+**Prompt enviado:**  
+Foi solicitado que Claude propusesse uma arquitetura de backend simples, preferencialmente usando Supabase, com login, persistência de medicamentos, horários/agendamentos e registros de tomada. Também foi pedido que a solução contemplasse três usuários/pacientes fictícios — Maria Silva, Carlos Oliveira e Ana Souza — e que a migração dos mocks para backend fosse feita de forma incremental, preservando a separação entre telas, hooks, services, repositories, adapters e backend.
+
+**Resumo da resposta do Claude:**  
+Claude recomendou o uso do Supabase como backend gratuito/simples para o TCC, por oferecer Postgres, autenticação, Row Level Security, APIs e SDK em uma única plataforma, evitando a necessidade de criar e manter um backend próprio. A resposta justificou que essa escolha mantém o foco do TCC na interface e na avaliação de usabilidade, em vez de deslocar esforço para infraestrutura.
+
+Foi proposta uma arquitetura baseada em repository pattern, na qual as telas continuam consumindo hooks e services sem saber se os dados vêm de mocks ou do Supabase. A estrutura sugerida inclui `supabaseClient` em `adapters`, `AuthProvider`, `MedicationProvider`, hooks de autenticação e paciente atual, repositories mockados e Supabase, além de uma `LoginScreen`.
+
+Claude propôs quatro tabelas principais para o banco: `profiles`, `medications`, `medication_schedules` e `medication_logs`. Também sugeriu o uso de três usuários fictícios, com e-mails no domínio `.test`, representando diferentes idades e níveis de familiaridade tecnológica: Maria Silva, Carlos Oliveira e Ana Souza.
+
+A resposta também detalhou uma estratégia de autenticação com `AuthProvider`, sessão ativa, login, logout, navegação condicional entre `AuthStack` e `AppStack`, além de isolamento dos dados por usuário usando Row Level Security. Por fim, Claude propôs um plano incremental de implementação dividido entre C14 e C20.
+
+**Decisão tomada:**  
+Aceito como plano arquitetural inicial.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Médio
+
+**Problema ou limitação:**  
+A proposta aumenta o escopo do projeto, pois adiciona autenticação, banco de dados, persistência, configuração de ambiente e segurança básica. Apesar disso, o backend foi considerado necessário porque o orientador indicou que login e persistência são obrigatórios. A solução ainda precisa ser implementada e validada, especialmente em relação às policies de Row Level Security, ao seed dos dados fictícios e à integração do estado atual do app com o backend.
+
+**Evidência:**  
+Não houve alteração de arquivos nesta etapa. A interação gerou uma proposta arquitetural com:
+- escolha do Supabase como backend;
+- sugestão de repository pattern;
+- modelagem inicial de banco;
+- estratégia de autenticação;
+- três usuários demo;
+- plano incremental C14–C20;
+- cuidados de segurança e privacidade;
+- texto sugerido para descrever o backend no TCC.
+
+**Plano incremental sugerido:**  
+- `C14` — Introduzir repository pattern ainda usando mocks.
+- `C15` — Criar projeto Supabase, schema, RLS e seed dos três usuários demo.
+- `C16` — Implementar autenticação no app com LoginScreen, AuthProvider e sessão.
+- `C17` — Integrar leitura dos dados do Supabase.
+- `C18` — Persistir “Marcar como tomado” e “Desfazer” no backend.
+- `C19` — Adicionar estados de loading e erro.
+- `C20` — Polimento, QA e documentação final do backend.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque marca a transição do app de uma interface baseada em mocks locais para uma implementação com backend simples e persistência. A decisão de usar Supabase pode ser justificada como uma solução BaaS adequada ao escopo acadêmico, permitindo autenticação e persistência sem exigir a criação de um backend próprio.
+
+A proposta também preserva a arquitetura em camadas construída nas interações anteriores. O uso de repositories permite que as telas continuem agnósticas à origem dos dados, o que reduz retrabalho e ajuda a explicar a evolução arquitetural do projeto.
+
+Do ponto de vista do TCC, o backend deve ser descrito como infraestrutura de apoio à persistência e à avaliação da interface, não como sistema clínico autônomo. Os dados usados serão fictícios e o sistema não realizará prescrição, recomendação médica, alteração de tratamento ou avaliação de eficácia clínica.
+
+**Possíveis riscos ou limitações:**  
+- O escopo cresce significativamente com login, autenticação, banco e persistência.
+- A configuração incorreta de Row Level Security pode comprometer o isolamento entre usuários demo.
+- O plano gratuito do Supabase pode ter limitações operacionais, como pausa por inatividade.
+- O uso de `AsyncStorage` volta a ser necessário para persistência de sessão, apesar de ter sido evitado nas fases iniciais.
+- A geração de logs do dia ainda precisa de decisão: on-demand no app ou via mecanismo no banco.
+- A integração com backend pode introduzir estados de loading, erro e latência que ainda não existem na versão mockada.
+- Será necessário documentar claramente que os usuários e dados são fictícios.
+
+---
+
+### Interação C14
+
+**Categoria:**  
+Arquitetura / Refatoração / Repository Pattern / Preparação para backend
+
+**Tela ou funcionalidade:**  
+Introdução da camada de repository para medicamentos usando os dados mockados atuais.
+
+**Objetivo do prompt:**  
+Preparar a arquitetura do app para uma futura integração com Supabase, criando uma camada de repository entre o `MedicationProvider` e a origem dos dados. O objetivo foi manter telas, hooks e componentes agnósticos à origem dos dados, preservando o comportamento atual do app.
+
+**Prompt enviado:**  
+Foi solicitado que Claude criasse uma interface `MedicationRepository` e uma implementação `MockMedicationRepository`, usando os mocks locais existentes. Também foi pedido que o `MedicationProvider` passasse a consumir o repository, deixando de acessar diretamente os mocks de medicamentos, agendamentos e logs. A etapa deveria preservar o comportamento visual e funcional existente, sem integrar Supabase, autenticação, AsyncStorage ou backend real.
+
+**Resumo da resposta do Claude:**  
+Claude criou a interface `MedicationRepository`, definindo operações como listar medicamentos, listar agendamentos, listar logs, marcar medicamento como tomado e restaurar um log anterior. Também criou `MockMedicationRepository`, uma implementação baseada nos mocks locais, com cópias internas dos dados para evitar mutação dos mocks originais.
+
+O `MedicationService` foi refatorado para ficar mais puro: deixou de importar mocks diretamente e passou a receber um objeto `MedicationData`, contendo `logs`, `schedules` e `medications`. Os métodos públicos do service passaram a receber esses dados como argumento, mantendo a responsabilidade do service restrita à derivação de view-models.
+
+O `MedicationProvider` foi atualizado para receber um `MedicationRepository`, usando `mockMedicationRepository` como padrão. Ele agora carrega medicamentos, agendamentos e logs por meio do repository, e as ações `markAsTaken` e `undoLastTaken` passam pelo repository. O context também passou a expor `medications` e `schedules`.
+
+Os hooks `useTodayMedications`, `useMedicationList`, `useMedicationDetail` e `useMedicationHistory` foram ajustados para consumir `logs`, `schedules` e `medications` do context e repassar esses dados ao `MedicationService`. As telas, componentes, navegação e mocks não foram alterados.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Médio
+
+**Problema ou limitação:**  
+A refatoração não traz mudança visual imediata, mas prepara a arquitetura para o backend. A interface do repository ainda é síncrona, enquanto a futura implementação com Supabase será assíncrona, o que exigirá adaptação posterior no provider para lidar com `Promise`, `loading` e erros. Também permanece o uso de `currentPatient` como substituto temporário de sessão até a implementação de autenticação.
+
+**Evidência:**  
+Arquivos criados:
+- `src/repositories/MedicationRepository.ts`
+- `src/repositories/MockMedicationRepository.ts`
+
+Arquivos modificados:
+- `src/services/MedicationService.ts`
+- `src/contexts/MedicationProvider.tsx`
+- `src/hooks/useTodayMedications.ts`
+- `src/hooks/useMedicationList.ts`
+- `src/hooks/useMedicationDetail.ts`
+- `src/hooks/useMedicationHistory.ts`
+
+Arquivos não modificados intencionalmente:
+- `HomeScreen`
+- `MedicationListScreen`
+- `MedicationDetailScreen`
+- `HistoryScreen`
+- componentes visuais
+- navegação
+- mocks locais
+
+**Checklist de validação local:**  
+- `npx expo start` sobe sem warnings novos.
+- `npx tsc --noEmit` passa sem erros.
+- A HomeScreen continua exibindo os quatro medicamentos do mock.
+- O card “Próximo medicamento” continua mostrando Losartana como atrasada.
+- O resumo continua mostrando 1 tomado, 2 pendentes e 1 atrasado no estado inicial.
+- A ação “Marcar como tomado” continua funcionando.
+- O banner de feedback continua aparecendo.
+- A ação “Desfazer” continua restaurando o status anterior corretamente.
+- A MedicationListScreen continua filtrando corretamente.
+- A MedicationDetailScreen continua abrindo e exibindo os dados corretos.
+- A HistoryScreen continua refletindo os medicamentos tomados.
+- Não há imports diretos de `medicationsMock`, `medicationSchedulesMock` ou `medicationLogsMock` fora de `src/repositories/` ou `src/mocks/`, salvo exceções justificadas.
+- O comportamento visual do app permanece igual ao anterior.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque introduz uma separação explícita entre a camada de apresentação e a origem dos dados. A partir desta etapa, os mocks deixam de ser apenas dados importados diretamente e passam a ser uma implementação temporária de repository. Isso fortalece a justificativa arquitetural da evolução do app, pois a futura integração com Supabase poderá ser feita substituindo a implementação do repository, sem reescrever telas e componentes.
+
+A refatoração também melhora a pureza do `MedicationService`, que deixa de conhecer os mocks e passa a transformar dados recebidos em view-models para a interface. Essa separação ajuda a explicar, no TCC, a diferença entre domínio, derivação de dados para apresentação, estado da aplicação e persistência.
+
+**Possíveis riscos ou limitações:**  
+- A interface do repository ainda é síncrona, mas o Supabase exigirá operações assíncronas.
+- A adaptação futura para backend exigirá estados de carregamento e erro.
+- O `MockMedicationRepository` usa singleton, o que ajuda na simulação de persistência durante hot reload, mas pode causar diferenças em relação ao estado inicial esperado em alguns testes locais.
+- O `currentPatient` ainda funciona como substituto temporário de sessão e precisará ser substituído por autenticação real.
+- A integração com backend ainda não existe; esta etapa apenas prepara a arquitetura.
+
+---
+
+### Interação C15
+
+**Categoria:**  
+Backend / Banco de dados / Supabase / Segurança / Documentação
+
+**Tela ou funcionalidade:**  
+Criação do schema Supabase, seed dos usuários demo e documentação inicial do backend.
+
+**Objetivo do prompt:**  
+Criar os artefatos necessários para configurar o backend Supabase do projeto, incluindo tabelas, constraints, Row Level Security, seed de usuários fictícios e documentação de setup, sem ainda integrar o app React Native ao backend.
+
+**Prompt enviado:**  
+Foi solicitado que Claude gerasse os arquivos de configuração do Supabase para o backend do TCC, incluindo `schema.sql`, `seed.sql`, `supabase/README.md`, `.env.example` e sugestões de atualização do `.gitignore`. O pedido incluía modelagem para perfis, medicamentos, agendamentos e registros de tomada, além de dados fictícios para Maria Silva, Carlos Oliveira e Ana Souza.
+
+**Resumo da resposta do Claude:**  
+Claude criou os arquivos `supabase/schema.sql`, `supabase/seed.sql`, `supabase/README.md` e `.env.example`. Também modificou o `.gitignore` para reforçar o cuidado com variáveis de ambiente, chaves secretas e dumps do Supabase.
+
+O `schema.sql` define quatro tabelas principais: `profiles`, `medications`, `medication_schedules` e `medication_logs`. A tabela `profiles` se relaciona com `auth.users`, enquanto medicamentos, agendamentos e logs se relacionam de forma encadeada. O schema inclui chaves primárias, chaves estrangeiras, checks de validade, `created_at`, `updated_at`, triggers para atualização automática de `updated_at`, além de Row Level Security em todas as tabelas.
+
+Também foi criada uma constraint em `medication_logs` para garantir consistência entre `status` e `taken_at`: logs com status `taken` precisam ter `taken_at`, enquanto logs pendentes ou atrasados não devem ter horário de tomada.
+
+O `seed.sql` foi estruturado para depender dos usuários criados previamente no Supabase Auth. Ele busca os UUIDs dos usuários por e-mail em `auth.users`, atualiza os respectivos profiles e cria medicamentos, agendamentos e logs fictícios para as três personas demo:
+- Maria Silva, com cenário mais completo;
+- Carlos Oliveira, com cenário intermediário;
+- Ana Souza, com cenário em que os medicamentos já estão tomados.
+
+O `supabase/README.md` documenta a ordem de configuração: aplicar o schema, criar usuários demo, aplicar o seed, testar RLS, obter URL e anon key e evitar commit de chaves sensíveis. O `.env.example` define as variáveis públicas esperadas para a futura integração do app com Supabase.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Médio
+
+**Problema ou limitação:**  
+Esta etapa configura o backend, mas ainda não integra o app React Native ao Supabase. O app continua usando o `MockMedicationRepository`. Além disso, a configuração exige ordem correta: aplicar `schema.sql`, criar os três usuários no Supabase Auth e depois rodar `seed.sql`. Caso os usuários sejam criados antes do schema, o trigger de criação automática de profiles ainda não existirá. Também há dependência de `current_date` no seed, o que exige atenção no dia da demonstração ou avaliação.
+
+**Evidência:**  
+Arquivos criados:
+- `supabase/schema.sql`
+- `supabase/seed.sql`
+- `supabase/README.md`
+- `.env.example`
+
+Arquivo modificado:
+- `.gitignore`
+
+**Checklist de validação local / Supabase:**  
+- Criar projeto no Supabase.
+- Aplicar `supabase/schema.sql` no SQL Editor.
+- Verificar se as tabelas `profiles`, `medications`, `medication_schedules` e `medication_logs` foram criadas.
+- Confirmar se RLS está ativado nas quatro tabelas.
+- Criar os três usuários demo no Supabase Auth:
+  - `maria.demo@takere.test`
+  - `carlos.demo@takere.test`
+  - `ana.demo@takere.test`
+- Confirmar se os usuários estão com e-mail confirmado ou se a confirmação foi desabilitada para demonstração.
+- Aplicar `supabase/seed.sql`.
+- Verificar se Maria possui 4 medicamentos.
+- Verificar se Carlos possui 2 medicamentos.
+- Verificar se Ana possui 3 medicamentos.
+- Verificar contagem geral esperada dos logs:
+  - `taken = 4`
+  - `pending = 4`
+  - `late = 1`
+- Testar se a RLS limita cada usuário aos próprios dados.
+- Confirmar que `.env` e chaves secretas não foram commitadas.
+- Rodar `git grep -n service_role` antes de qualquer commit para garantir que nenhuma chave secreta foi versionada.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque materializa a camada de persistência definida na arquitetura da C13. O uso do Supabase permite que o app tenha autenticação e armazenamento persistente sem exigir a construção de um backend próprio, o que mantém o foco do TCC na interface e na avaliação de usabilidade.
+
+A modelagem em quatro tabelas reflete diretamente o domínio do app: usuário/paciente demo, medicamentos, horários e registros de tomada. A ativação de Row Level Security também permite justificar que, mesmo com dados fictícios, a aplicação foi estruturada com preocupação de isolamento por usuário.
+
+A criação de usuários demo com diferentes idades e familiaridade tecnológica também contribui para o TCC, pois permite demonstrar o app em cenários distintos sem utilizar dados reais de saúde.
+
+**Possíveis riscos ou limitações:**  
+- O app ainda não está integrado ao Supabase nesta etapa.
+- A ordem de setup é importante: schema → usuários Auth → seed.
+- O seed depende de usuários já existentes em `auth.users`.
+- O uso de `current_date` no seed exige atenção no dia da demonstração.
+- Os logs não são gerados automaticamente todos os dias.
+- O plano gratuito do Supabase pode pausar por inatividade.
+- As senhas demo são previsíveis e devem ser usadas apenas no contexto acadêmico.
+- RLS precisa ser testada cuidadosamente antes da avaliação ou banca.
+- A futura integração exigirá novas dependências no app, como `@supabase/supabase-js`, `@react-native-async-storage/async-storage` e `react-native-url-polyfill`.
+
+---
+
+### Interação C16
+
+**Categoria:**  
+Autenticação / Supabase / Navegação / Login / Integração inicial com backend
+
+**Tela ou funcionalidade:**  
+Login com Supabase, controle de sessão e navegação condicional entre fluxo autenticado e não autenticado.
+
+**Objetivo do prompt:**  
+Integrar autenticação Supabase ao app, criando uma tela de login, controle de sessão com `AuthProvider`, adapter para o Supabase e navegação condicional. A etapa deveria permitir login/logout com os usuários demo, mas ainda manter os dados de medicamentos vindos do `MockMedicationRepository`.
+
+**Prompt enviado:**  
+Foi solicitado que Claude implementasse a integração inicial de autenticação com Supabase, incluindo instalação das dependências necessárias, criação do `supabaseClient`, `AuthProvider`, `useAuth`, `LoginScreen`, `AuthStack`, `AppStack`, ajuste no `RootNavigator`, atualização do `App.tsx` e adição de logout. Também foi especificado que a leitura real dos medicamentos do Supabase ficaria para a próxima etapa.
+
+**Resumo da resposta do Claude:**  
+Claude indicou os comandos de instalação das dependências `@supabase/supabase-js`, `@react-native-async-storage/async-storage` e `react-native-url-polyfill`. Também alertou que o valor de `EXPO_PUBLIC_SUPABASE_URL` deve ser apenas a URL base do projeto Supabase, sem `/rest/v1/` no final, pois o SDK adiciona os caminhos internos automaticamente.
+
+Foram criados os arquivos `supabaseClient.ts`, `AuthProvider.tsx`, `useAuth.ts`, `LoginScreen.tsx`, `AuthStack.tsx` e `AppStack.tsx`. A navegação foi reorganizada para renderizar `AuthStack` quando não houver sessão e `AppStack` quando houver sessão autenticada. O `RootNavigator` passou a consumir `useAuth` e mostrar um `ActivityIndicator` enquanto a sessão inicial é carregada.
+
+O `AuthProvider` foi implementado para restaurar a sessão com `supabase.auth.getSession()`, escutar mudanças com `onAuthStateChange`, expor `session`, `user`, `isLoading`, `authError`, `signIn`, `signOut` e `clearError`. A `LoginScreen` foi criada com campos de e-mail e senha, mensagens amigáveis de erro e botões de demonstração para preencher credenciais de Maria, Carlos e Ana.
+
+O `MedicationProvider` foi movido para dentro do `AppStack`, garantindo que ele só seja montado após login e que seja desmontado no logout. Isso evita que estados locais de uma sessão vazem para outra. A HomeScreen passou a ter uma opção discreta de “Sair” dentro da seção “Mais opções”, com confirmação via `Alert`.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Médio
+
+**Problema ou limitação:**  
+A autenticação foi integrada, mas os dados dos medicamentos ainda continuam vindo dos mocks. Assim, nesta etapa, mesmo ao logar como Carlos ou Ana, o app ainda pode exibir os medicamentos mockados da Maria. Isso foi considerado comportamento esperado da C16, pois a leitura real dos dados do Supabase será feita apenas na C17. Também é necessário garantir que as dependências sejam instaladas corretamente e que o `.env` use a URL do Supabase sem `/rest/v1/`.
+
+**Evidência:**  
+Arquivos criados:
+- `src/adapters/supabaseClient.ts`
+- `src/contexts/AuthProvider.tsx`
+- `src/hooks/useAuth.ts`
+- `src/screens/LoginScreen.tsx`
+- `src/navigation/AuthStack.tsx`
+- `src/navigation/AppStack.tsx`
+
+Arquivos modificados:
+- `src/navigation/routes.ts`
+- `src/navigation/RootNavigator.tsx`
+- `src/screens/HomeScreen.tsx`
+- `App.tsx`
+
+Dependências indicadas:
+- `@supabase/supabase-js`
+- `@react-native-async-storage/async-storage`
+- `react-native-url-polyfill`
+
+**Checklist de validação local:**  
+- Instalar dependências com:
+  - `npx expo install @supabase/supabase-js @react-native-async-storage/async-storage react-native-url-polyfill`
+- Conferir se o `.env` contém:
+  - `EXPO_PUBLIC_SUPABASE_URL=https://<projeto>.supabase.co`
+  - `EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon-ou-publishable-key>`
+- Garantir que a URL não termina com `/rest/v1/`.
+- Reiniciar o Expo após alterar `.env`.
+- Abrir o app sem sessão e verificar se a `LoginScreen` aparece.
+- Confirmar se os campos de e-mail e senha aparecem corretamente.
+- Testar login com Maria.
+- Testar login com Carlos.
+- Testar login com Ana.
+- Verificar se, após login, o app entra na Home.
+- Verificar se a sessão é restaurada ao fechar e reabrir o app.
+- Testar logout pela Home.
+- Confirmar se logout volta para a LoginScreen.
+- Testar erro de senha incorreta e verificar se a mensagem aparece em português.
+- Confirmar que o app ainda usa dados mockados nesta etapa.
+- Confirmar que Home, lista, detalhe, histórico, filtros, marcar como tomado e desfazer continuam funcionando.
+- Rodar `npx tsc --noEmit` depois de instalar as dependências.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é importante porque introduz autenticação real no app, uma exigência indicada pelo orientador para que a implementação tenha persistência e login. A integração foi feita mantendo separação entre autenticação e dados de medicamentos, reduzindo risco de quebrar o fluxo já implementado.
+
+A criação de uma `LoginScreen` com perfis fictícios de demonstração também contribui para a avaliação, pois permite alternar entre usuários de diferentes idades e níveis de familiaridade tecnológica. Ao mesmo tempo, a interface deixa claro que se trata de um ambiente acadêmico/de demonstração, evitando interpretação como sistema clínico real.
+
+Do ponto de vista arquitetural, a navegação condicional por sessão protege as telas internas quando não há usuário autenticado. Além disso, mover o `MedicationProvider` para dentro do `AppStack` evita vazamento de estado entre sessões.
+
+**Possíveis riscos ou limitações:**  
+- Os dados de medicamentos ainda não vêm do Supabase nesta etapa.
+- Usuários diferentes ainda podem ver os mesmos dados mockados até a C17.
+- O login depende da configuração correta dos usuários demo no Supabase.
+- Se os usuários não estiverem confirmados, o login pode falhar com erro de e-mail não confirmado.
+- Se a URL do Supabase estiver com `/rest/v1/`, o SDK pode falhar.
+- A sessão depende de `AsyncStorage`, introduzindo uma nova dependência nativa.
+- A interface ainda não trata dados carregados do backend, loading de medicamentos ou erro de rede para os dados.

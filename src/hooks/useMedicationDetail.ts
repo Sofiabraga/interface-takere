@@ -16,11 +16,23 @@ export interface UseMedicationDetailResult {
 }
 
 export function useMedicationDetail(logId: string): UseMedicationDetailResult {
-  const { logs, lastTaken, markAsTaken, undoLastTaken } = useMedicationContext();
+  const {
+    logs,
+    medications,
+    schedules,
+    lastTaken,
+    markAsTaken,
+    undoLastTaken,
+  } = useMedicationContext();
 
   const detail = useMemo(
-    () => MedicationService.getMedicationDetail(logId, logs),
-    [logId, logs],
+    () =>
+      MedicationService.getMedicationDetail(logId, {
+        logs,
+        schedules,
+        medications,
+      }),
+    [logId, logs, schedules, medications],
   );
 
   return {

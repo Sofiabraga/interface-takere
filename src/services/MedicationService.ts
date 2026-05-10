@@ -2,8 +2,12 @@ import { MedicationStatus } from '../domain/enums/MedicationStatus';
 import { Medication } from '../domain/models/Medication';
 import { MedicationLog } from '../domain/models/MedicationLog';
 import { MedicationSchedule } from '../domain/models/MedicationSchedule';
-import { medicationSchedulesMock } from '../mocks/medicationSchedules.mock';
-import { medicationsMock } from '../mocks/medications.mock';
+
+export interface MedicationData {
+  logs: MedicationLog[];
+  schedules: MedicationSchedule[];
+  medications: Medication[];
+}
 
 export interface TodayMedicationView {
   id: string;
@@ -49,12 +53,18 @@ export interface MedicationHistoryView {
   total: number;
 }
 
-function findMedication(medicationId: string): Medication | undefined {
-  return medicationsMock.find((med) => med.id === medicationId);
+function findMedication(
+  medicationId: string,
+  medications: Medication[],
+): Medication | undefined {
+  return medications.find((med) => med.id === medicationId);
 }
 
-function findSchedule(scheduleId: string): MedicationSchedule | undefined {
-  return medicationSchedulesMock.find((sched) => sched.id === scheduleId);
+function findSchedule(
+  scheduleId: string,
+  schedules: MedicationSchedule[],
+): MedicationSchedule | undefined {
+  return schedules.find((sched) => sched.id === scheduleId);
 }
 
 function formatScheduledTime(iso: string): string {
@@ -64,10 +74,14 @@ function formatScheduledTime(iso: string): string {
   return `${hours}:${minutes}`;
 }
 
-function joinLog(log: MedicationLog): TodayMedicationView | null {
-  const schedule = findSchedule(log.scheduleId);
+function joinLog(
+  log: MedicationLog,
+  schedules: MedicationSchedule[],
+  medications: Medication[],
+): TodayMedicationView | null {
+  const schedule = findSchedule(log.scheduleId, schedules);
   if (!schedule) return null;
-  const medication = findMedication(schedule.medicationId);
+  const medication = findMedication(schedule.medicationId, medications);
   if (!medication) return null;
   return {
     id: log.id,
@@ -77,9 +91,13 @@ function joinLog(log: MedicationLog): TodayMedicationView | null {
   };
 }
 
-function getLogsForPatient(patientId: string, logs: MedicationLog[]): MedicationLog[] {
+function getLogsForPatient(
+  patientId: string,
+  logs: MedicationLog[],
+  schedules: MedicationSchedule[],
+): MedicationLog[] {
   const patientScheduleIds = new Set(
-    medicationSchedulesMock
+    schedules
       .filter((sched) => sched.patientId === patientId)
       .map((sched) => sched.id),
   );
@@ -103,9 +121,9 @@ function pickNext(items: TodayMedicationView[]): TodayMedicationView | null {
 }
 
 export const MedicationService = {
-  getTodayDashboard(patientId: string, logs: MedicationLog[]): TodayDashboard {
-    const items = getLogsForPatient(patientId, logs)
-      .map(joinLog)
+  getTodayDashboard(patientId: string, data: MedicationData): TodayDashboard {
+    const items = getLogsForPatient(patientId, data.logs, data.schedules)
+      .map((log) => joinLog(log, data.schedules, data.medications))
       .filter((view): view is TodayMedicationView => view !== null)
       .sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
 
@@ -119,13 +137,13 @@ export const MedicationService = {
 
   getMedicationDetail(
     logId: string,
-    logs: MedicationLog[],
+    data: MedicationData,
   ): MedicationDetailView | null {
-    const log = logs.find((entry) => entry.id === logId);
+    const log = data.logs.find((entry) => entry.id === logId);
     if (!log) return null;
-    const schedule = findSchedule(log.scheduleId);
+    const schedule = findSchedule(log.scheduleId, data.schedules);
     if (!schedule) return null;
-    const medication = findMedication(schedule.medicationId);
+    const medication = findMedication(schedule.medicationId, data.medications);
     if (!medication) return null;
     return {
       id: log.id,
@@ -138,14 +156,18 @@ export const MedicationService = {
 
   getMedicationHistory(
     patientId: string,
-    logs: MedicationLog[],
+    data: MedicationData,
   ): MedicationHistoryView {
-    const entries: HistoryEntryView[] = getLogsForPatient(patientId, logs)
+    const entries: HistoryEntryView[] = getLogsForPatient(
+      patientId,
+      data.logs,
+      data.schedules,
+    )
       .filter((log) => log.status === 'taken' && log.takenAt)
       .map((log): HistoryEntryView | null => {
-        const schedule = findSchedule(log.scheduleId);
+        const schedule = findSchedule(log.scheduleId, data.schedules);
         if (!schedule) return null;
-        const medication = findMedication(schedule.medicationId);
+        const medication = findMedication(schedule.medicationId, data.medications);
         if (!medication) return null;
         const takenAtIso = log.takenAt as string;
         return {

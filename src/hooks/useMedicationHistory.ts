@@ -11,11 +11,16 @@ export interface UseMedicationHistoryResult {
 }
 
 export function useMedicationHistory(): UseMedicationHistoryResult {
-  const { logs } = useMedicationContext();
+  const { logs, medications, schedules } = useMedicationContext();
 
   const history = useMemo(
-    () => MedicationService.getMedicationHistory(currentPatient.id, logs),
-    [logs],
+    () =>
+      MedicationService.getMedicationHistory(currentPatient.id, {
+        logs,
+        schedules,
+        medications,
+      }),
+    [logs, schedules, medications],
   );
 
   return { history };

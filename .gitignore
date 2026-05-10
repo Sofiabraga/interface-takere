@@ -11,9 +11,17 @@ android/
 ios/
 
 # environment
+# Nunca commitar arquivos com a chave service_role do Supabase
+# (ela bypassa RLS). A anon key fica em .env e também não vai pro git.
 .env
 .env.local
 .env.*.local
+
+# Supabase CLI / dumps
+supabase/.temp/
+supabase/.branches/
+supabase/*.dump
+*.pgsql.bak
 
 # logs
 npm-debug.log*

@@ -1,3 +1,4 @@
+import { Alert } from 'react-native';
 import { AppHeader } from '../components/AppHeader';
 import { Card } from '../components/Card';
 import { FeedbackBanner } from '../components/FeedbackBanner';
@@ -8,12 +9,14 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionTitle } from '../components/SectionTitle';
 import { StatusLegend } from '../components/StatusLegend';
+import { useAuth } from '../hooks/useAuth';
 import { useTodayMedications } from '../hooks/useTodayMedications';
 import { Routes } from '../navigation/routes';
 import { useAppNavigation } from '../navigation/useAppNavigation';
 
 export function HomeScreen() {
   const navigation = useAppNavigation();
+  const { signOut } = useAuth();
   const {
     patient,
     dashboard,
@@ -30,6 +33,23 @@ export function HomeScreen() {
 
   function handleViewHistory() {
     navigation.navigate(Routes.History);
+  }
+
+  function handleSignOut() {
+    Alert.alert(
+      'Sair do app',
+      'Tem certeza que quer sair? Você precisará entrar de novo na próxima vez.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sair',
+          style: 'destructive',
+          onPress: () => {
+            void signOut();
+          },
+        },
+      ],
+    );
   }
 
   return (
@@ -78,6 +98,11 @@ export function HomeScreen() {
         label="Ver histórico de hoje"
         variant="secondary"
         onPress={handleViewHistory}
+      />
+      <PrimaryButton
+        label="Sair"
+        variant="secondary"
+        onPress={handleSignOut}
       />
     </ScreenContainer>
   );

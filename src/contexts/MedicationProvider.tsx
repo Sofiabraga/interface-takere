@@ -8,10 +8,12 @@ import {
   useRef,
   useState,
 } from 'react';
+import { Medication } from '../domain/models/Medication';
 import { MedicationLog } from '../domain/models/MedicationLog';
-import { medicationLogsMock } from '../mocks/medicationLogs.mock';
-import { medicationSchedulesMock } from '../mocks/medicationSchedules.mock';
-import { medicationsMock } from '../mocks/medications.mock';
+import { MedicationSchedule } from '../domain/models/MedicationSchedule';
+import { currentPatient } from '../mocks/patients.mock';
+import { MedicationRepository } from '../repositories/MedicationRepository';
+import { mockMedicationRepository } from '../repositories/MockMedicationRepository';
 
 const FEEDBACK_DURATION_MS = 6000;
 
@@ -22,6 +24,8 @@ export interface LastTakenAction {
 
 interface MedicationContextValue {
   logs: MedicationLog[];
+  medications: Medication[];
+  schedules: MedicationSchedule[];
   lastTaken: LastTakenAction | null;
   markAsTaken: (logId: string) => void;
   undoLastTaken: () => void;
@@ -30,29 +34,44 @@ interface MedicationContextValue {
 
 const MedicationContext = createContext<MedicationContextValue | null>(null);
 
-function cloneLogs(source: MedicationLog[]): MedicationLog[] {
-  return source.map((log) => ({ ...log }));
-}
-
-function findMedicationName(logId: string, logs: MedicationLog[]): string | null {
-  const log = logs.find((entry) => entry.id === logId);
-  if (!log) return null;
-  const schedule = medicationSchedulesMock.find((s) => s.id === log.scheduleId);
-  if (!schedule) return null;
-  const medication = medicationsMock.find((m) => m.id === schedule.medicationId);
-  return medication?.name ?? null;
-}
-
 interface MedicationProviderProps {
   children: ReactNode;
+  repository?: MedicationRepository;
 }
 
-export function MedicationProvider({ children }: MedicationProviderProps) {
-  const [logs, setLogs] = useState<MedicationLog[]>(() => cloneLogs(medicationLogsMock));
+// `currentPatient` is consumed here as a session stand-in; it will be replaced
+// by the authenticated profile when AuthProvider is introduced (planned C16).
+export function MedicationProvider({
+  children,
+  repository = mockMedicationRepository,
+}: MedicationProviderProps) {
+  const patientId = currentPatient.id;
+
+  const [medications] = useState<Medication[]>(() =>
+    repository.listMedications(patientId),
+  );
+  const [schedules] = useState<MedicationSchedule[]>(() =>
+    repository.listSchedules(patientId),
+  );
+  const [logs, setLogs] = useState<MedicationLog[]>(() =>
+    repository.listLogs(patientId),
+  );
   const [lastTaken, setLastTaken] = useState<LastTakenAction | null>(null);
 
   const previousLogRef = useRef<MedicationLog | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const findMedicationName = useCallback(
+    (logId: string): string | null => {
+      const log = logs.find((entry) => entry.id === logId);
+      if (!log) return null;
+      const schedule = schedules.find((s) => s.id === log.scheduleId);
+      if (!schedule) return null;
+      const medication = medications.find((m) => m.id === schedule.medicationId);
+      return medication?.name ?? null;
+    },
+    [logs, schedules, medications],
+  );
 
   const clearFeedbackTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -66,19 +85,17 @@ export function MedicationProvider({ children }: MedicationProviderProps) {
       const target = logs.find((log) => log.id === logId);
       if (!target || target.status === 'taken') return;
 
-      const medicationName = findMedicationName(logId, logs);
+      const medicationName = findMedicationName(logId);
       if (!medicationName) return;
 
-      previousLogRef.current = { ...target };
+      const previous: MedicationLog = { ...target };
+      const takenAt = new Date().toISOString();
+      const updated = repository.markAsTaken(logId, takenAt);
+      if (!updated) return;
 
-      setLogs((prev) =>
-        prev.map((log) =>
-          log.id === logId
-            ? { ...log, status: 'taken' as const, takenAt: new Date().toISOString() }
-            : log,
-        ),
-      );
+      previousLogRef.current = previous;
 
+      setLogs((prev) => prev.map((log) => (log.id === logId ? updated : log)));
       setLastTaken({ logId, medicationName });
 
       clearFeedbackTimer();
@@ -88,19 +105,22 @@ export function MedicationProvider({ children }: MedicationProviderProps) {
         timerRef.current = null;
       }, FEEDBACK_DURATION_MS);
     },
-    [logs, clearFeedbackTimer],
+    [logs, findMedicationName, repository, clearFeedbackTimer],
   );
 
   const undoLastTaken = useCallback(() => {
     const previous = previousLogRef.current;
     if (!previous) return;
 
-    setLogs((prev) => prev.map((log) => (log.id === previous.id ? previous : log)));
+    const restored = repository.restoreLog(previous);
+    if (!restored) return;
+
+    setLogs((prev) => prev.map((log) => (log.id === previous.id ? restored : log)));
 
     previousLogRef.current = null;
     setLastTaken(null);
     clearFeedbackTimer();
-  }, [clearFeedbackTimer]);
+  }, [repository, clearFeedbackTimer]);
 
   const dismissFeedback = useCallback(() => {
     setLastTaken(null);
@@ -115,12 +135,22 @@ export function MedicationProvider({ children }: MedicationProviderProps) {
   const value = useMemo<MedicationContextValue>(
     () => ({
       logs,
+      medications,
+      schedules,
       lastTaken,
       markAsTaken,
       undoLastTaken,
       dismissFeedback,
     }),
-    [logs, lastTaken, markAsTaken, undoLastTaken, dismissFeedback],
+    [
+      logs,
+      medications,
+      schedules,
+      lastTaken,
+      markAsTaken,
+      undoLastTaken,
+      dismissFeedback,
+    ],
   );
 
   return (

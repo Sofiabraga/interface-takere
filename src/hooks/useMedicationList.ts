@@ -18,11 +18,16 @@ export interface UseMedicationListResult {
 export function useMedicationList(
   filter: MedicationListFilter = 'all',
 ): UseMedicationListResult {
-  const { logs } = useMedicationContext();
+  const { logs, medications, schedules } = useMedicationContext();
 
   const dashboard = useMemo(
-    () => MedicationService.getTodayDashboard(currentPatient.id, logs),
-    [logs],
+    () =>
+      MedicationService.getTodayDashboard(currentPatient.id, {
+        logs,
+        schedules,
+        medications,
+      }),
+    [logs, schedules, medications],
   );
 
   const items = useMemo(

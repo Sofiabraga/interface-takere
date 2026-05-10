@@ -14,12 +14,24 @@ export interface UseTodayMedicationsResult {
 }
 
 export function useTodayMedications(): UseTodayMedicationsResult {
-  const { logs, lastTaken, markAsTaken, undoLastTaken, dismissFeedback } =
-    useMedicationContext();
+  const {
+    logs,
+    medications,
+    schedules,
+    lastTaken,
+    markAsTaken,
+    undoLastTaken,
+    dismissFeedback,
+  } = useMedicationContext();
 
   const dashboard = useMemo(
-    () => MedicationService.getTodayDashboard(currentPatient.id, logs),
-    [logs],
+    () =>
+      MedicationService.getTodayDashboard(currentPatient.id, {
+        logs,
+        schedules,
+        medications,
+      }),
+    [logs, schedules, medications],
   );
 
   return {

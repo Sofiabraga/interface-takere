@@ -1,28 +1,28 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { HistoryScreen } from '../screens/HistoryScreen';
-import { HomeScreen } from '../screens/HomeScreen';
-import { MedicationDetailScreen } from '../screens/MedicationDetailScreen';
-import { MedicationListScreen } from '../screens/MedicationListScreen';
-import { Routes, RootStackParamList } from './routes';
-
-const Stack = createNativeStackNavigator<RootStackParamList>();
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useAuth } from '../hooks/useAuth';
+import { colors } from '../theme';
+import { AppStack } from './AppStack';
+import { AuthStack } from './AuthStack';
 
 export function RootNavigator() {
-  return (
-    <Stack.Navigator
-      initialRouteName={Routes.Home}
-      screenOptions={{ headerShown: false }}
-    >
-      <Stack.Screen name={Routes.Home} component={HomeScreen} />
-      <Stack.Screen
-        name={Routes.MedicationList}
-        component={MedicationListScreen}
-      />
-      <Stack.Screen
-        name={Routes.MedicationDetail}
-        component={MedicationDetailScreen}
-      />
-      <Stack.Screen name={Routes.History} component={HistoryScreen} />
-    </Stack.Navigator>
-  );
+  const { session, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  return session ? <AppStack /> : <AuthStack />;
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
