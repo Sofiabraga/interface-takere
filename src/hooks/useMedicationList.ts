@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useMedicationContext } from '../contexts/MedicationProvider';
 import { MedicationStatus } from '../domain/enums/MedicationStatus';
-import { currentPatient } from '../mocks/patients.mock';
 import {
   DailySummary,
   MedicationService,
@@ -18,16 +17,16 @@ export interface UseMedicationListResult {
 export function useMedicationList(
   filter: MedicationListFilter = 'all',
 ): UseMedicationListResult {
-  const { logs, medications, schedules } = useMedicationContext();
+  const { patientId, logs, medications, schedules } = useMedicationContext();
 
   const dashboard = useMemo(
     () =>
-      MedicationService.getTodayDashboard(currentPatient.id, {
+      MedicationService.getTodayDashboard(patientId ?? '', {
         logs,
         schedules,
         medications,
       }),
-    [logs, schedules, medications],
+    [patientId, logs, schedules, medications],
   );
 
   const items = useMemo(

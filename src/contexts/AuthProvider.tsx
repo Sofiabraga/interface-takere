@@ -9,6 +9,11 @@ import {
 } from 'react';
 import type { AuthError, Session, User } from '@supabase/supabase-js';
 import { supabase } from '../adapters/supabaseClient';
+import { Patient } from '../domain/models/Patient';
+import {
+  mapProfile,
+  ProfileRow,
+} from '../repositories/mappers/supabaseMedicationMapper';
 
 export interface SignInResult {
   ok: boolean;
@@ -17,6 +22,11 @@ export interface SignInResult {
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
+  // profile vem de public.profiles e é carregado após cada mudança de
+  // sessão. Fica null durante o carregamento inicial e logo após
+  // signIn — o RootNavigator/MedicationGate só liberam as telas
+  // protegidas quando profile passa a ser não-nulo (ou erro).
+  profile: Patient | null;
   isLoading: boolean;
   authError: string | null;
   signIn: (email: string, password: string) => Promise<SignInResult>;
@@ -32,6 +42,7 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -56,6 +67,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Quando a sessão muda, recarrega o profile do usuário autenticado.
+  // Sem sessão → limpa o profile. Falha silenciosa por enquanto: se a
+  // query falhar, o app trata profile=null como ainda-não-disponível e
+  // o MedicationGate cobre o vazio. Ainda assim logamos no console em
+  // dev para não esconder regressões.
+  useEffect(() => {
+    let cancelled = false;
+
+    const userId = session?.user.id ?? null;
+    if (userId === null) {
+      setProfile(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void supabase
+      .from('profiles')
+      .select('id, display_name, age, tech_familiarity')
+      .eq('id', userId)
+      .single<ProfileRow>()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data) {
+          if (__DEV__) {
+            console.warn('[AuthProvider] falha ao carregar profile', error);
+          }
+          setProfile(null);
+          return;
+        }
+        setProfile(mapProfile(data));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user.id]);
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<SignInResult> => {
@@ -86,13 +135,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     () => ({
       session,
       user: session?.user ?? null,
+      profile,
       isLoading,
       authError,
       signIn,
       signOut,
       clearError,
     }),
-    [session, isLoading, authError, signIn, signOut, clearError],
+    [session, profile, isLoading, authError, signIn, signOut, clearError],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

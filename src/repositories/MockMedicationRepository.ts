@@ -17,7 +17,7 @@ export class MockMedicationRepository implements MedicationRepository {
     this.logs = medicationLogsMock.map((l) => ({ ...l }));
   }
 
-  listMedications(patientId: string): Medication[] {
+  async listMedications(patientId: string): Promise<Medication[]> {
     const ownedMedicationIds = new Set(
       this.schedules
         .filter((s) => s.patientId === patientId)
@@ -28,13 +28,13 @@ export class MockMedicationRepository implements MedicationRepository {
       .map((m) => ({ ...m }));
   }
 
-  listSchedules(patientId: string): MedicationSchedule[] {
+  async listSchedules(patientId: string): Promise<MedicationSchedule[]> {
     return this.schedules
       .filter((s) => s.patientId === patientId)
       .map((s) => ({ ...s }));
   }
 
-  listLogs(patientId: string): MedicationLog[] {
+  async listLogs(patientId: string): Promise<MedicationLog[]> {
     const patientScheduleIds = new Set(
       this.schedules
         .filter((s) => s.patientId === patientId)
@@ -45,7 +45,7 @@ export class MockMedicationRepository implements MedicationRepository {
       .map((l) => ({ ...l }));
   }
 
-  markAsTaken(logId: string, takenAt: string): MedicationLog | null {
+  async markAsTaken(logId: string, takenAt: string): Promise<MedicationLog | null> {
     const index = this.logs.findIndex((l) => l.id === logId);
     if (index === -1) return null;
     const updated: MedicationLog = {
@@ -57,7 +57,7 @@ export class MockMedicationRepository implements MedicationRepository {
     return { ...updated };
   }
 
-  restoreLog(log: MedicationLog): MedicationLog | null {
+  async restoreLog(log: MedicationLog): Promise<MedicationLog | null> {
     const index = this.logs.findIndex((l) => l.id === log.id);
     if (index === -1) return null;
     const restored: MedicationLog = { ...log };

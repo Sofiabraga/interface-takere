@@ -107,6 +107,14 @@ futuro — visualmente estranho mas permitido pela constraint do banco.
 Para a maior parte das demos (10h em diante), os horários estão todos no
 passado e a tela fica natural.
 
+### Reset rápido durante uma sessão de teste
+
+Para desfazer todos os "marcar como tomado" feitos pelo app sem recriar
+medicamentos e horários (UUIDs continuam estáveis), rode
+[`reset_logs.sql`](./reset_logs.sql). Ele só atualiza
+`medication_logs` e mostra ao final uma contagem por perfil para
+conferência. Use o `seed.sql` quando quiser um reset total.
+
 ---
 
 ## 4. Verificar a RLS

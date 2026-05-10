@@ -25,7 +25,9 @@ export function HomeScreen() {
     undoLastTaken,
   } = useTodayMedications();
 
-  const firstName = patient.name.split(' ')[0];
+  // Gate em AppStack garante que patient não é null aqui em prática;
+  // o ?? '' é defensivo e evita um crash em razões pontuais.
+  const firstName = patient?.name.split(' ')[0] ?? '';
 
   function handleViewAll() {
     navigation.navigate(Routes.MedicationList);

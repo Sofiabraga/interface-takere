@@ -1145,3 +1145,100 @@ Do ponto de vista arquitetural, a navegação condicional por sessão protege as
 - Se a URL do Supabase estiver com `/rest/v1/`, o SDK pode falhar.
 - A sessão depende de `AsyncStorage`, introduzindo uma nova dependência nativa.
 - A interface ainda não trata dados carregados do backend, loading de medicamentos ou erro de rede para os dados.
+
+---
+
+### Interação C17
+
+**Categoria:**  
+Backend / Supabase / Repository Pattern / Leitura de dados / Integração com usuário autenticado
+
+**Tela ou funcionalidade:**  
+Leitura dos medicamentos, agendamentos e registros de tomada a partir do Supabase.
+
+**Objetivo do prompt:**  
+Substituir a leitura dos dados mockados pela leitura real do Supabase, fazendo com que os dados exibidos no app reflitam o usuário autenticado. O objetivo foi permitir que Maria, Carlos e Ana visualizem seus próprios medicamentos, sem ainda persistir no backend a ação de “Marcar como tomado” ou “Desfazer”.
+
+**Prompt enviado:**  
+Foi solicitado que Claude criasse uma implementação `SupabaseMedicationRepository`, ajustasse a interface `MedicationRepository` para operações assíncronas, atualizasse o `MedicationProvider` para carregar dados do usuário autenticado, criasse ou ajustasse `useCurrentPatient`, mantivesse o `MedicationService` puro e preservasse as telas sem acesso direto ao Supabase. Também foi solicitado que a escrita de “Marcar como tomado” permanecesse local nesta etapa, deixando a persistência real para a C18.
+
+**Resumo da resposta do Claude:**  
+Claude criou o `SupabaseMedicationRepository`, responsável por ler medicamentos, agendamentos e logs diretamente do Supabase usando o client configurado anteriormente. A interface `MedicationRepository` foi convertida para uma interface assíncrona, e o `MockMedicationRepository` foi atualizado para manter o mesmo contrato com `Promise`.
+
+Também foi criado o arquivo `supabaseMedicationMapper`, centralizando a conversão entre os nomes do banco em `snake_case` e os tipos do app em `camelCase`. Assim, campos como `display_name`, `tech_familiarity`, `time_of_day`, `scheduled_for` e `taken_at` são convertidos para o formato esperado pela aplicação, sem vazar estruturas do Supabase para as telas ou hooks.
+
+O `AuthProvider` passou a carregar o profile atual a partir da tabela `profiles`, expondo os dados do usuário autenticado. O hook `useCurrentPatient` foi criado para fornecer o paciente atual para as telas e hooks. O `MedicationProvider` foi atualizado para carregar dados de forma assíncrona com base no usuário autenticado, usando o repository configurado. Ele passou a expor também estados de `isLoading`, `error` e `reload`.
+
+Foi criado o `MedicationGate`, usado no `AppStack`, para centralizar estados de carregamento e erro antes de renderizar as telas principais. Dessa forma, as telas continuam sem precisar lidar diretamente com loading/error de backend.
+
+A escrita de “Marcar como tomado” e “Desfazer” ainda não foi persistida no Supabase. Nesta etapa, o `SupabaseMedicationRepository` usa um `logsCache` interno para manter a experiência local durante a sessão, enquanto a persistência real ficou planejada para a C18.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Médio
+
+**Problema ou limitação:**  
+A leitura dos dados agora vem do Supabase, mas a escrita ainda não é persistida. Assim, ao marcar um medicamento como tomado e depois fazer logout/login ou recarregar os dados, a alteração pode ser perdida, pois ainda não foi salva no banco. Esse comportamento é esperado para a C17 e será corrigido na C18. Também foi introduzida maior complexidade assíncrona no `MedicationProvider`, exigindo tratamento de loading, erro e troca de usuário.
+
+**Evidência:**  
+Arquivos criados:
+- `src/repositories/SupabaseMedicationRepository.ts`
+- `src/repositories/mappers/supabaseMedicationMapper.ts`
+- `src/hooks/useCurrentPatient.ts`
+- `src/navigation/MedicationGate.tsx`
+
+Arquivos modificados:
+- `src/repositories/MedicationRepository.ts`
+- `src/repositories/MockMedicationRepository.ts`
+- `src/contexts/AuthProvider.tsx`
+- `src/contexts/MedicationProvider.tsx`
+- `src/navigation/AppStack.tsx`
+- `src/hooks/useTodayMedications.ts`
+- `src/hooks/useMedicationList.ts`
+- `src/hooks/useMedicationHistory.ts`
+- `src/screens/HomeScreen.tsx`
+
+**Checklist de validação local:**  
+- Reiniciar o Metro com cache limpo: `npx expo start -c`.
+- `npm run typecheck` passa sem erros.
+- Login com Maria mostra os 4 medicamentos da Maria.
+- Login com Carlos mostra os 2 medicamentos do Carlos.
+- Login com Ana mostra os 3 medicamentos da Ana.
+- Nenhum dado da Maria aparece ao logar como Carlos ou Ana.
+- Logout limpa o estado do usuário anterior.
+- Trocar de usuário sem fechar o app não mantém dados do usuário anterior.
+- A HomeScreen continua funcionando.
+- A MedicationListScreen continua filtrando corretamente.
+- A MedicationDetailScreen continua abrindo os detalhes.
+- A HistoryScreen mostra os logs vindos do Supabase.
+- Em Maria, a lista mostra 1 tomado, 2 pendentes e 1 atrasado.
+- Em Ana, o histórico mostra os 3 medicamentos tomados.
+- Marcar medicamento como tomado ainda altera a UI na sessão atual.
+- Desfazer ainda funciona dentro da sessão.
+- Após logout/login, alterações de “Marcar como tomado” não persistem ainda, comportamento esperado da C17.
+- Modo offline antes do login mostra erro amigável.
+- Botão “Tentar novamente” recarrega os dados após conexão voltar.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque marca a passagem do app de uma interface baseada em mocks para uma interface conectada a um backend real. A leitura dos dados passa a refletir o usuário autenticado, permitindo que os três perfis fictícios tenham experiências diferentes no app.
+
+Do ponto de vista arquitetural, a interação valida o repository pattern introduzido na C14. As telas e componentes permaneceram agnósticos à origem dos dados, enquanto a troca da fonte de dados ficou concentrada em repositories, mappers, provider e hooks. Isso fortalece a argumentação do TCC sobre separação de responsabilidades e redução de retrabalho.
+
+A criação dos mappers também é importante porque isola a diferença entre o modelo relacional do banco e os tipos usados pela interface. Assim, a UI continua trabalhando com modelos de domínio mais simples e adequados à aplicação.
+
+Do ponto de vista de usabilidade, o `MedicationGate` evita que as telas apareçam vazias ou quebradas durante carregamento ou erro de rede, contribuindo para visibilidade do estado do sistema e mensagens mais compreensíveis para o usuário.
+
+**Possíveis riscos ou limitações:**  
+- A ação “Marcar como tomado” ainda não é persistida no Supabase.
+- O `logsCache` usado pelo `SupabaseMedicationRepository` é uma solução temporária até a C18.
+- O optimistic update ainda não possui rollback baseado em falha real de backend.
+- Se a persistência falhar na C18, será necessário garantir que a UI volte ao estado anterior e mostre erro amigável.
+- O campo `frequencyHours` continua sendo preenchido com valor padrão no mapper, pois não existe no schema.
+- `Patient.age` pode receber valor padrão caso o banco retorne `null`, embora isso não apareça na UI.
+- A leitura assíncrona introduz novos estados de loading e erro que precisam ser testados em dispositivos reais.
+- Ainda não há testes automatizados para validar repository, mappers ou provider.

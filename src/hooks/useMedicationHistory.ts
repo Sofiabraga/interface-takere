@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useMedicationContext } from '../contexts/MedicationProvider';
-import { currentPatient } from '../mocks/patients.mock';
 import {
   MedicationHistoryView,
   MedicationService,
@@ -11,16 +10,16 @@ export interface UseMedicationHistoryResult {
 }
 
 export function useMedicationHistory(): UseMedicationHistoryResult {
-  const { logs, medications, schedules } = useMedicationContext();
+  const { patientId, logs, medications, schedules } = useMedicationContext();
 
   const history = useMemo(
     () =>
-      MedicationService.getMedicationHistory(currentPatient.id, {
+      MedicationService.getMedicationHistory(patientId ?? '', {
         logs,
         schedules,
         medications,
       }),
-    [logs, schedules, medications],
+    [patientId, logs, schedules, medications],
   );
 
   return { history };
