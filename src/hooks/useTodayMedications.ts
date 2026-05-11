@@ -8,9 +8,11 @@ export interface UseTodayMedicationsResult {
   patient: Patient | null;
   dashboard: TodayDashboard;
   lastTaken: LastTakenAction | null;
-  markAsTaken: (logId: string) => void;
-  undoLastTaken: () => void;
+  actionError: string | null;
+  markAsTaken: (logId: string) => Promise<void>;
+  undoLastTaken: () => Promise<void>;
   dismissFeedback: () => void;
+  dismissActionError: () => void;
 }
 
 export function useTodayMedications(): UseTodayMedicationsResult {
@@ -20,9 +22,11 @@ export function useTodayMedications(): UseTodayMedicationsResult {
     medications,
     schedules,
     lastTaken,
+    actionError,
     markAsTaken,
     undoLastTaken,
     dismissFeedback,
+    dismissActionError,
   } = useMedicationContext();
   const patient = useCurrentPatient();
 
@@ -40,8 +44,10 @@ export function useTodayMedications(): UseTodayMedicationsResult {
     patient,
     dashboard,
     lastTaken,
+    actionError,
     markAsTaken,
     undoLastTaken,
     dismissFeedback,
+    dismissActionError,
   };
 }

@@ -13,19 +13,17 @@ import {
   mapSchedule,
 } from './mappers/supabaseMedicationMapper';
 
-// Implementação Supabase do MedicationRepository — leitura only nesta
-// etapa (C17). Persistência de "marcar como tomado" e "desfazer" fica
-// para a C18; até lá, markAsTaken/restoreLog operam num cache interno
-// populado por listLogs, mantendo o mesmo contrato do MockRepository
-// para que provider/hooks/telas não precisem se preocupar com a fonte.
+const LOG_COLUMNS = 'id, schedule_id, scheduled_for, status, taken_at';
+
+// Implementação Supabase do MedicationRepository — leitura e escrita
+// reais. A C17 mantinha um logsCache local em markAsTaken/restoreLog
+// porque a persistência ainda não existia; em C18 esse cache foi
+// removido e o Supabase volta a ser a única fonte de verdade.
 //
 // As queries dependem das policies de RLS para isolamento entre
 // usuários: a sessão autenticada do supabase-js carrega o JWT e o
-// banco filtra por auth.uid(). Não passamos a service_role aqui, e
-// nem precisaríamos.
+// banco filtra por auth.uid(). Não passamos a service_role aqui.
 export class SupabaseMedicationRepository implements MedicationRepository {
-  private logsCache: MedicationLog[] = [];
-
   constructor(private readonly client: SupabaseClient = supabase) {}
 
   async listMedications(patientId: string): Promise<Medication[]> {
@@ -68,8 +66,7 @@ export class SupabaseMedicationRepository implements MedicationRepository {
     const { data, error } = await this.client
       .from('medication_logs')
       .select(
-        'id, schedule_id, scheduled_for, status, taken_at, ' +
-          'medication_schedules!inner(medications!inner(profile_id))',
+        `${LOG_COLUMNS}, medication_schedules!inner(medications!inner(profile_id))`,
       )
       .eq('medication_schedules.medications.profile_id', patientId)
       .order('scheduled_for', { ascending: true })
@@ -78,36 +75,51 @@ export class SupabaseMedicationRepository implements MedicationRepository {
     if (error) {
       throw new Error(`Falha ao carregar registros do dia: ${error.message}`);
     }
-
-    const logs = (data ?? []).map(mapLog);
-    // Preenche o cache local — markAsTaken/restoreLog precisam dele
-    // até a C18. Clonamos para que mutações futuras não vazem.
-    this.logsCache = logs.map((log) => ({ ...log }));
-    return logs;
+    return (data ?? []).map(mapLog);
   }
 
-  // C17: NÃO persiste no Supabase. Atualiza apenas o cache local para
-  // que o provider continue funcionando como antes. C18 substitui o
-  // corpo deste método por um upsert/update real em medication_logs.
+  // Persistência real: update em medication_logs com status='taken'
+  // e taken_at preenchido. A constraint medication_logs_taken_consistency
+  // exige os dois juntos, e setamos ambos no mesmo update.
+  //
+  // RLS: a policy "logs update own" só deixa atualizar logs cujo
+  // schedule pertence a uma medication do usuário autenticado. Se a
+  // policy bloquear (ex.: tentar marcar log de outro usuário), o
+  // supabase-js retorna `data: []` sem erro — por isso o `.single()`,
+  // que materializa essa situação como PGRST116 e cai no catch.
   async markAsTaken(logId: string, takenAt: string): Promise<MedicationLog | null> {
-    const index = this.logsCache.findIndex((l) => l.id === logId);
-    if (index === -1) return null;
-    const updated: MedicationLog = {
-      ...this.logsCache[index],
-      status: 'taken',
-      takenAt,
-    };
-    this.logsCache[index] = updated;
-    return { ...updated };
+    const { data, error } = await this.client
+      .from('medication_logs')
+      .update({ status: 'taken', taken_at: takenAt })
+      .eq('id', logId)
+      .select(LOG_COLUMNS)
+      .single<MedicationLogRow>();
+
+    if (error) {
+      throw new Error(`Falha ao salvar tomada: ${error.message}`);
+    }
+    return data ? mapLog(data) : null;
   }
 
-  // C17: igual ao markAsTaken — só altera o cache. Em C18, o corpo
-  // vira um update revertendo status/taken_at no banco.
+  // Restaura status + taken_at exatamente como estavam antes.
+  // O provider passa o snapshot anterior (capturado antes do
+  // optimistic update), então aqui só repassamos os campos para o
+  // banco. Quando o anterior era pending/late, takenAt vem undefined
+  // e gravamos null para satisfazer a check constraint.
   async restoreLog(log: MedicationLog): Promise<MedicationLog | null> {
-    const index = this.logsCache.findIndex((l) => l.id === log.id);
-    if (index === -1) return null;
-    const restored: MedicationLog = { ...log };
-    this.logsCache[index] = restored;
-    return { ...restored };
+    const { data, error } = await this.client
+      .from('medication_logs')
+      .update({
+        status: log.status,
+        taken_at: log.takenAt ?? null,
+      })
+      .eq('id', log.id)
+      .select(LOG_COLUMNS)
+      .single<MedicationLogRow>();
+
+    if (error) {
+      throw new Error(`Falha ao desfazer tomada: ${error.message}`);
+    }
+    return data ? mapLog(data) : null;
   }
 }

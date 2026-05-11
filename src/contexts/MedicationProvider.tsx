@@ -16,6 +16,9 @@ import { SupabaseMedicationRepository } from '../repositories/SupabaseMedication
 import { useAuth } from '../hooks/useAuth';
 
 const FEEDBACK_DURATION_MS = 6000;
+const ACTION_ERROR_DURATION_MS = 6000;
+const ACTION_ERROR_MESSAGE =
+  'Não foi possível salvar a alteração. Tente novamente.';
 
 export interface LastTakenAction {
   logId: string;
@@ -28,12 +31,17 @@ interface MedicationContextValue {
   medications: Medication[];
   schedules: MedicationSchedule[];
   lastTaken: LastTakenAction | null;
+  // Mensagem amigável, exposta pelo provider, mostrada nas telas via
+  // FeedbackBanner com variant='error'. Tem prioridade sobre o
+  // banner de sucesso (lastTaken) quando ambos existirem.
+  actionError: string | null;
   isLoading: boolean;
   error: string | null;
   reload: () => void;
-  markAsTaken: (logId: string) => void;
-  undoLastTaken: () => void;
+  markAsTaken: (logId: string) => Promise<void>;
+  undoLastTaken: () => Promise<void>;
   dismissFeedback: () => void;
+  dismissActionError: () => void;
 }
 
 const MedicationContext = createContext<MedicationContextValue | null>(null);
@@ -66,13 +74,59 @@ export function MedicationProvider({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastTaken, setLastTaken] = useState<LastTakenAction | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const previousLogRef = useRef<MedicationLog | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Cada chamada de load incrementa o token e o then/catch verifica
   // se ainda é o token corrente — assim duas trocas rápidas de
   // usuário não fazem o resultado da primeira sobrescrever a segunda.
   const loadTokenRef = useRef(0);
+  // Guarda contra setState após unmount nas ações async (markAsTaken
+  // e undoLastTaken). Logout durante um persist em voo desmonta o
+  // provider; sem este flag o catch tentaria atualizar estado morto.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const clearFeedbackTimer = useCallback(() => {
+    if (feedbackTimerRef.current !== null) {
+      clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = null;
+    }
+  }, []);
+
+  const clearActionErrorTimer = useCallback(() => {
+    if (errorTimerRef.current !== null) {
+      clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = null;
+    }
+  }, []);
+
+  const armFeedbackTimer = useCallback(() => {
+    clearFeedbackTimer();
+    feedbackTimerRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
+      setLastTaken(null);
+      previousLogRef.current = null;
+      feedbackTimerRef.current = null;
+    }, FEEDBACK_DURATION_MS);
+  }, [clearFeedbackTimer]);
+
+  const showActionError = useCallback(() => {
+    setActionError(ACTION_ERROR_MESSAGE);
+    clearActionErrorTimer();
+    errorTimerRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
+      setActionError(null);
+      errorTimerRef.current = null;
+    }, ACTION_ERROR_DURATION_MS);
+  }, [clearActionErrorTimer]);
 
   const clearMedicationState = useCallback(() => {
     setMedications([]);
@@ -81,8 +135,11 @@ export function MedicationProvider({
     setError(null);
     setIsLoading(false);
     setLastTaken(null);
+    setActionError(null);
     previousLogRef.current = null;
-  }, []);
+    clearFeedbackTimer();
+    clearActionErrorTimer();
+  }, [clearFeedbackTimer, clearActionErrorTimer]);
 
   const load = useCallback(
     (targetPatientId: string) => {
@@ -145,20 +202,13 @@ export function MedicationProvider({
     [logs, schedules, medications],
   );
 
-  const clearFeedbackTimer = useCallback(() => {
-    if (timerRef.current !== null) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  // Optimistic update: muda o estado local imediatamente e dispara o
-  // repository.markAsTaken em paralelo. Em C17, o
-  // SupabaseMedicationRepository ainda não persiste — só atualiza um
-  // cache interno. Em C18, o resultado real do banco deve confirmar
-  // (ou reverter) a UI.
+  // Optimistic update + persist. Se o backend rejeitar, faz rollback
+  // para o estado anterior, limpa o banner de sucesso e exibe o
+  // banner de erro. Em sucesso, substitui o optimistic pelo registro
+  // que voltou do banco — útil porque o servidor pode normalizar
+  // taken_at (precisão de ms, fuso etc).
   const markAsTaken = useCallback(
-    (logId: string) => {
+    async (logId: string): Promise<void> => {
       const target = logs.find((log) => log.id === logId);
       if (!target || target.status === 'taken') return;
 
@@ -178,35 +228,103 @@ export function MedicationProvider({
         prev.map((log) => (log.id === logId ? optimistic : log)),
       );
       setLastTaken({ logId, medicationName });
+      setActionError(null);
+      clearActionErrorTimer();
+      armFeedbackTimer();
 
-      clearFeedbackTimer();
-      timerRef.current = setTimeout(() => {
+      try {
+        const persisted = await resolvedRepository.markAsTaken(logId, takenAt);
+        if (!mountedRef.current) return;
+        if (!persisted) {
+          throw new Error('Update retornou vazio (RLS ou id inválido).');
+        }
+        // Substitui optimistic pelo registro confirmado pelo banco.
+        setLogs((prev) =>
+          prev.map((log) => (log.id === logId ? persisted : log)),
+        );
+      } catch (err) {
+        if (!mountedRef.current) return;
+        if (__DEV__) {
+          console.warn('[MedicationProvider] markAsTaken falhou', err);
+        }
+        // Rollback completo: estado anterior, sem banner de sucesso.
+        setLogs((prev) =>
+          prev.map((log) => (log.id === logId ? previous : log)),
+        );
         setLastTaken(null);
         previousLogRef.current = null;
-        timerRef.current = null;
-      }, FEEDBACK_DURATION_MS);
-
-      // Não bloqueia a UI; nesta etapa o retorno é meramente
-      // informativo. C18 deve passar a checar o resultado e reverter
-      // a UI em caso de erro.
-      void resolvedRepository.markAsTaken(logId, takenAt);
+        clearFeedbackTimer();
+        showActionError();
+      }
     },
-    [logs, findMedicationName, resolvedRepository, clearFeedbackTimer],
+    [
+      logs,
+      findMedicationName,
+      resolvedRepository,
+      armFeedbackTimer,
+      clearFeedbackTimer,
+      clearActionErrorTimer,
+      showActionError,
+    ],
   );
 
-  const undoLastTaken = useCallback(() => {
+  // "Desfazer" também é optimistic + persist. Em falha, refazemos o
+  // optimistic-anterior (estado 'taken') e restauramos o banner de
+  // sucesso para que o usuário tenha uma segunda chance de tentar
+  // "Desfazer". O banner de erro ganha prioridade enquanto está
+  // visível; quando o timer dele expira, o success banner volta a
+  // aparecer (lastTaken ainda preenchido).
+  const undoLastTaken = useCallback(async (): Promise<void> => {
     const previous = previousLogRef.current;
     if (!previous) return;
+
+    const lastTakenSnapshot = lastTaken;
+    // Captura o estado atual ('taken') antes do optimistic, para
+    // poder reaplicá-lo em caso de erro.
+    const currentTaken = logs.find((log) => log.id === previous.id);
 
     setLogs((prev) =>
       prev.map((log) => (log.id === previous.id ? { ...previous } : log)),
     );
-    previousLogRef.current = null;
     setLastTaken(null);
     clearFeedbackTimer();
 
-    void resolvedRepository.restoreLog(previous);
-  }, [resolvedRepository, clearFeedbackTimer]);
+    try {
+      const persisted = await resolvedRepository.restoreLog(previous);
+      if (!mountedRef.current) return;
+      if (!persisted) {
+        throw new Error('Update retornou vazio (RLS ou id inválido).');
+      }
+      setLogs((prev) =>
+        prev.map((log) => (log.id === previous.id ? persisted : log)),
+      );
+      previousLogRef.current = null;
+    } catch (err) {
+      if (!mountedRef.current) return;
+      if (__DEV__) {
+        console.warn('[MedicationProvider] restoreLog falhou', err);
+      }
+      // Rollback do optimistic: volta para 'taken' e re-arma o
+      // banner de sucesso para uma nova tentativa de Desfazer.
+      if (currentTaken) {
+        setLogs((prev) =>
+          prev.map((log) => (log.id === previous.id ? currentTaken : log)),
+        );
+      }
+      if (lastTakenSnapshot) {
+        setLastTaken(lastTakenSnapshot);
+        armFeedbackTimer();
+      }
+      showActionError();
+    }
+  }, [
+    lastTaken,
+    logs,
+    resolvedRepository,
+    clearFeedbackTimer,
+    armFeedbackTimer,
+    showActionError,
+  ]);
 
   const dismissFeedback = useCallback(() => {
     setLastTaken(null);
@@ -214,9 +332,17 @@ export function MedicationProvider({
     clearFeedbackTimer();
   }, [clearFeedbackTimer]);
 
+  const dismissActionError = useCallback(() => {
+    clearActionErrorTimer();
+    setActionError(null);
+  }, [clearActionErrorTimer]);
+
   useEffect(() => {
-    return () => clearFeedbackTimer();
-  }, [clearFeedbackTimer]);
+    return () => {
+      clearFeedbackTimer();
+      clearActionErrorTimer();
+    };
+  }, [clearFeedbackTimer, clearActionErrorTimer]);
 
   const value = useMemo<MedicationContextValue>(
     () => ({
@@ -225,12 +351,14 @@ export function MedicationProvider({
       medications,
       schedules,
       lastTaken,
+      actionError,
       isLoading,
       error,
       reload,
       markAsTaken,
       undoLastTaken,
       dismissFeedback,
+      dismissActionError,
     }),
     [
       patientId,
@@ -238,12 +366,14 @@ export function MedicationProvider({
       medications,
       schedules,
       lastTaken,
+      actionError,
       isLoading,
       error,
       reload,
       markAsTaken,
       undoLastTaken,
       dismissFeedback,
+      dismissActionError,
     ],
   );
 

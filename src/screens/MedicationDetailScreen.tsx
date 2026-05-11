@@ -20,7 +20,7 @@ export function MedicationDetailScreen() {
   const navigation = useAppNavigation();
   const route = useRoute<MedicationDetailRouteProp>();
   const { logId } = route.params;
-  const { detail, lastTaken, markAsTaken, undoLastTaken } =
+  const { detail, lastTaken, actionError, markAsTaken, undoLastTaken } =
     useMedicationDetail(logId);
 
   if (!detail) {
@@ -50,7 +50,12 @@ export function MedicationDetailScreen() {
         onBack={() => navigation.goBack()}
       />
 
-      {showFeedback && lastTaken ? (
+      {/* Error tem prioridade sobre success — mesma regra usada na
+          HomeScreen, para que o feedback negativo da última ação não
+          fique escondido pelo banner verde. */}
+      {actionError ? (
+        <FeedbackBanner message={actionError} variant="error" />
+      ) : showFeedback && lastTaken ? (
         <FeedbackBanner
           message={`${lastTaken.medicationName} marcado como tomado.`}
           onUndo={undoLastTaken}

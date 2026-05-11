@@ -9,14 +9,23 @@ import {
 } from 'react-native';
 import { colors, radius, spacing, typography } from '../theme';
 
+export type FeedbackBannerVariant = 'success' | 'error';
+
 interface FeedbackBannerProps {
   message: string;
+  variant?: FeedbackBannerVariant;
+  // "Desfazer" no caso success; ausente no caso error.
   undoLabel?: string;
   onUndo?: () => void;
 }
 
+// Componente reutilizado para feedback positivo ("X marcado como
+// tomado", com Desfazer) e negativo ("Não foi possível salvar a
+// alteração."). Status comunicado por **texto + cor**, em linha com a
+// diretriz de acessibilidade do projeto.
 export function FeedbackBanner({
   message,
+  variant = 'success',
   undoLabel = 'Desfazer',
   onUndo,
 }: FeedbackBannerProps) {
@@ -24,21 +33,40 @@ export function FeedbackBanner({
     AccessibilityInfo.announceForAccessibility(message);
   }, [message]);
 
+  const isError = variant === 'error';
+  const palette = isError
+    ? {
+        background: colors.statusLateBg,
+        text: colors.statusLateText,
+        // rgba do statusLateText (#991B1B) com 12% para o pressed state
+        pressedBg: 'rgba(153, 27, 27, 0.12)',
+      }
+    : {
+        background: colors.statusTakenBg,
+        text: colors.statusTakenText,
+        pressedBg: 'rgba(22, 101, 52, 0.12)',
+      };
+
   return (
     <View
       accessibilityRole="alert"
       accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : 'none'}
-      style={styles.banner}
+      style={[styles.banner, { backgroundColor: palette.background }]}
     >
-      <Text style={styles.message}>{message}</Text>
+      <Text style={[styles.message, { color: palette.text }]}>{message}</Text>
       {onUndo ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={undoLabel}
           onPress={onUndo}
-          style={({ pressed }) => [styles.undoButton, pressed && styles.undoPressed]}
+          style={({ pressed }) => [
+            styles.undoButton,
+            pressed && { backgroundColor: palette.pressedBg },
+          ]}
         >
-          <Text style={styles.undoText}>{undoLabel}</Text>
+          <Text style={[styles.undoText, { color: palette.text }]}>
+            {undoLabel}
+          </Text>
         </Pressable>
       ) : null}
     </View>
@@ -47,7 +75,6 @@ export function FeedbackBanner({
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: colors.statusTakenBg,
     borderRadius: radius.lg,
     padding: spacing.md,
     flexDirection: 'row',
@@ -61,7 +88,6 @@ const styles = StyleSheet.create({
   },
   message: {
     ...typography.bodyStrong,
-    color: colors.statusTakenText,
     flex: 1,
   },
   undoButton: {
@@ -70,12 +96,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.md,
   },
-  undoPressed: {
-    backgroundColor: 'rgba(22, 101, 52, 0.12)',
-  },
   undoText: {
     ...typography.bodyStrong,
-    color: colors.statusTakenText,
     textDecorationLine: 'underline',
   },
 });

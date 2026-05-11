@@ -50,11 +50,6 @@ A proposta ainda não gera código funcional. Algumas decisões precisam ser rev
 **Evidência:**  
 Registro da resposta de Claude na sessão inicial; próxima etapa será geração de package.json, tsconfig.json, App.tsx e tipos de domínio.
 
-
-**Prompt de fato:** 
-Estou desenvolvendo um TCC em Ciência da Computação na UFRGS com o tema: “Um estudo exploratório do uso de Claude no desenvolvimento e avaliação de uma interface mHealth”. O artefato prático será uma interface mobile mHealth para gestão de medicamentos em tratamentos de média e longa duração, no contexto do projeto Takere/UFRGS. A interface não deve ser tratada como sistema clínico autônomo nem como ferramenta de decisão médica. O foco é apoio à organização do tratamento, visualização de medicamentos, horários, doses, status e registro de tomadas. Quero começar o desenvolvimento usando React Native com Expo, mas de uma forma que o projeto não fique fortemente acoplado ao Expo. Ou seja, quero usar Expo principalmente para facilitar o desenvolvimento inicial, mas mantendo uma arquitetura que permita remover ou substituir esse layer no futuro com o mínimo de impacto possível. Requisitos importantes de arquitetura: 1. Usar React Native + TypeScript. 2. Usar Expo apenas como camada inicial de execução/desenvolvimento. 3. Evitar dependência forte de recursos específicos do Expo. 4. Não usar expo-router neste momento; prefiro uma navegação mais portável, como React Navigation. 5. Sempre que algum recurso específico do Expo for necessário, criar uma abstração/adaptador em vez de usar diretamente nas telas. 6. Manter separação clara entre: - screens; - components; - domain/models; - mock data; - services; - adapters; - hooks; - utils. 7. Usar dados fictícios/mocks, sem dados reais de pacientes. 8. Priorizar clareza, acessibilidade, simplicidade visual e boa usabilidade. 9. A interface deve ser adequada para avaliação posterior com heurísticas de Nielsen e SUS. 10. Evitar criar complexidade desnecessária no início. Funcionalidades iniciais desejadas: 1. Tela inicial com resumo dos medicamentos do dia. 2. Lista de medicamentos com: - nome; - dose; - horário; - status: pendente, tomado ou atrasado. 3. Destaque para o próximo medicamento. 4. Tela de detalhe do medicamento. 5. Ação para registrar medicamento como tomado. 6. Histórico simples de tomadas. 7. Uso de pacientes mockados, se fizer sentido para o fluxo. Perfis mockados que podem ser usados: - Maria Silva, 68 anos, baixa familiaridade tecnológica, tratamento contínuo. - Carlos Oliveira, 45 anos, familiaridade média com tecnologia. - Ana Souza, 30 anos, familiaridade alta com tecnologia. Quero que você comece me ajudando em etapas. Primeiro, faça: 1. Proponha a arquitetura inicial de pastas. 2. Explique quais dependências devo instalar e por quê. 3. Explique quais dependências evitar para não acoplar demais ao Expo. 4. Defina os tipos principais do domínio, como Patient, Medication, MedicationSchedule, MedicationStatus e MedicationLog. 5. Proponha o fluxo inicial de telas. 6. Depois gere os arquivos iniciais do projeto em React Native + TypeScript. Restrições de implementação: - Não use dados reais de saúde. - Não implemente prescrição médica, recomendação clínica ou alteração de tratamento. - Não crie funcionalidades clínicas avançadas. - Não assuma backend neste primeiro momento; use mocks locais. - Não use bibliotecas sem explicar o motivo. - Não acople regras de negócio diretamente nas telas. - Componentes visuais devem ser reutilizáveis. - Código deve ser limpo, legível e fácil de explicar no TCC. Também quero que, ao final de cada resposta, você inclua uma pequena seção chamada “Registro para o TCC”, contendo: - Categoria da interação: ideação, arquitetura, geração de código, design visual, bug, refatoração etc. - O que foi sugerido. - O que provavelmente exigirá revisão humana. - Possíveis riscos ou limitações da solução proposta. Comece pela arquitetura inicial e pelo plano de implementação. Não gere código demais de uma vez; prefiro evoluir o app em pequenos passos.
-
-
 ---
 
 ### Interação C02
@@ -88,48 +83,6 @@ A HomeScreen ainda importa o mock diretamente, o que viola parcialmente a decis�
 
 **Evidência:**  
 Arquivos iniciais gerados: App.tsx, app.json, babel.config.js, package.json, tsconfig.json, src/navigation/RootNavigator.tsx, src/navigation/routes.ts, src/screens/HomeScreen.tsx, src/mocks/patients.mock.ts e arquivos de domínio em src/domain.
-
-**Prompt de fato:** 
-Pode seguir com a opção (a), usando paciente fixo Maria Silva.
-
-Gere apenas a base inicial do projeto, sem implementar telas completas ainda.
-
-Quero que você gere:
-
-1. package.json com as dependências mínimas necessárias.
-2. tsconfig.json adequado para React Native + TypeScript.
-3. babel.config.js, se necessário.
-4. App.tsx com a estrutura mínima de entrada do app.
-5. src/navigation/RootNavigator.tsx com React Navigation usando Native Stack.
-6. src/navigation/routes.ts com os nomes/tipos das rotas.
-7. Os tipos principais do domínio em arquivos separados:
-   - src/domain/enums/MedicationStatus.ts
-   - src/domain/enums/TechFamiliarity.ts
-   - src/domain/models/Patient.ts
-   - src/domain/models/Medication.ts
-   - src/domain/models/MedicationSchedule.ts
-   - src/domain/models/MedicationLog.ts
-8. Um mock simples da paciente Maria Silva em:
-   - src/mocks/patients.mock.ts
-9. Uma tela placeholder mínima para HomeScreen, apenas para validar que o app abre:
-   - src/screens/HomeScreen.tsx
-
-Restrições importantes:
-
-- Não use expo-router.
-- Não use dados reais de saúde.
-- Não implemente ainda lista completa, histórico ou registro de tomada.
-- Não importe nenhuma lib expo-* diretamente em screens.
-- Não coloque regra de negócio dentro da tela.
-- Não adicione bibliotecas além das já justificadas.
-- Use nomes em inglês no código e textos visíveis em português na interface.
-- Mantenha o código simples, legível e fácil de explicar no TCC.
-
-Ao final, inclua novamente a seção “Registro para o TCC” com:
-- Categoria da interação.
-- O que foi sugerido/gerado.
-- O que provavelmente exigirá revisão humana.
-- Possíveis riscos ou limitações.
 
 **Outras consideracoes:**
 tive que ficar instalando umas coisas e tentando fazer rodar o projeto pra testar local. nao funciona direto 
@@ -221,56 +174,6 @@ Arquivos criados ou modificados:
 - `src/screens/HomeScreen.tsx`
 - `src/navigation/RootNavigator.tsx`
 
-**Prompt real:**
- Agora quero evoluir o projeto com foco forte em UI/UX, clareza visual, consistência e boa usabilidade,    
-  pensando que o app será avaliado futuramente com heurísticas de Nielsen e SUS.                            
-                                                                                                            
-  Importante:                                                                                               
-  - O público principal da primeira versão deve ser a paciente Maria Silva, 68 anos, com baixa              
-  familiaridade tecnológica.                                                                                
-  - A interface deve ser simples, intuitiva, limpa, agradável e legível.                                    
-  - Quero priorizar clareza, acessibilidade e boa estética, sem exagerar em complexidade.                   
-                                                                                                            
-  Faça apenas esta próxima etapa:                                                                           
-                                                                                                            
-  1. Crie uma base visual do app em:                                                                        
-     - src/theme/colors.ts                                                                                  
-     - src/theme/spacing.ts                                                                                 
-     - src/theme/typography.ts                                                                              
-     - src/theme/radius.ts                                                                                  
-     - src/theme/index.ts                                                                                   
-                                                                                                            
-  2. Crie componentes reutilizáveis básicos em:                                                             
-     - src/components/ScreenContainer.tsx                                                                   
-     - src/components/AppHeader.tsx                                                                         
-     - src/components/Card.tsx                                                                              
-     - src/components/SectionTitle.tsx                                                                      
-     - src/components/PrimaryButton.tsx                                                                     
-     - src/components/StatusBadge.tsx                                                                       
-                                                                                                            
-  3. Atualize a HomeScreen para deixá-la visualmente mais consistente e mais adequada ao contexto do app,   
-  ainda de forma simples, contendo:                                                                         
-     - saudação para Maria Silva;                                                                           
-     - resumo textual do dia;                                                                               
-     - um card de “próximo medicamento” com dados mockados simples;                                         
-     - uma pequena seção “medicamentos de hoje” com poucos itens mockados;                                  
-     - botões/ações simples e claras;                                                                       
-     - textos em português.                                                                                 
-                                                                                                            
-  Restrições:                                                                                               
-  - Não implemente ainda lista completa, detalhe completo ou histórico completo.                            
-  - Não implemente backend.                                                                                 
-  - Não adicione bibliotecas extras sem justificar.                                                         
-  - Não use expo-* diretamente nas screens.                                                                 
-  - Não acople regras de negócio na tela.                                                                   
-  - Priorize boa hierarquia visual, contraste, legibilidade e consistência.                                 
-  - Status devem ser comunicados por texto e cor.                                                           
-  - O visual deve ser limpo e fácil de explicar no TCC.                                                     
-                                                                                                            
-  Ao final, inclua:                                                                                         
-  1. explicação breve das decisões de UI/UX tomadas;                                                        
-  2. como essas decisões ajudam em usabilidade; 
-
 ---
 
 ### Interação C05
@@ -332,93 +235,6 @@ Esta interação é relevante porque mostra o uso de Claude não apenas para ger
 - A lista pode ficar extensa se houver muitos medicamentos, prejudicando a visibilidade da legenda e do resumo.
 - A regra de priorizar medicamentos atrasados precisa ser validada do ponto de vista de experiência do usuário.
 - A estrutura atual ainda depende de mocks e deverá ser adaptada futuramente para backend ou persistência local.
-
-**Prompt de fato:**
-Agora quero fazer a próxima etapa do app com foco em deixar a HomeScreen mais parecida com uma interface real, bonita, consistente e adequada para avaliação de IHC.
-
-Contexto:
-Estou desenvolvendo um TCC em Ciência da Computação sobre o uso de Claude no desenvolvimento e avaliação de uma interface mHealth. A interface será avaliada posteriormente com heurísticas de Nielsen e SUS. Um dos avaliadores é da área de IHC, então a UI/UX precisa ser bem cuidada, clara, intuitiva e visualmente consistente.
-
-A paciente principal da primeira versão continua sendo Maria Silva, 68 anos, baixa familiaridade tecnológica. A interface deve ser acessível, legível e simples, mas sem parecer rudimentar.
-
-Objetivo desta etapa:
-Transformar a HomeScreen em um dashboard inicial de medicamentos do dia, visualmente mais completo e organizado, sem ainda criar todas as telas do app.
-
-Implemente apenas esta etapa:
-
-1. Organize dados mockados de medicamentos em arquivos separados:
-   - src/mocks/medications.mock.ts
-   - src/mocks/medicationSchedules.mock.ts
-   - src/mocks/medicationLogs.mock.ts
-
-2. Crie uma camada de serviço:
-   - src/services/MedicationService.ts
-
-   Esse service deve:
-   - usar os mocks internamente;
-   - retornar os medicamentos do dia da paciente atual;
-   - retornar o próximo medicamento em destaque;
-   - retornar um resumo do dia com quantidade de medicamentos tomados, pendentes e atrasados;
-   - não depender de backend;
-   - não usar AsyncStorage ainda;
-   - não conter regras clínicas, apenas organização e apresentação dos dados mockados.
-
-3. Crie um hook:
-   - src/hooks/useTodayMedications.ts
-
-   Esse hook deve:
-   - consumir o MedicationService;
-   - entregar para a HomeScreen os dados já preparados;
-   - evitar que a tela tenha regra de negócio ou acesse mocks diretamente.
-
-4. Crie componentes visuais reutilizáveis específicos para esta tela:
-   - src/components/MedicationSummaryCard.tsx
-   - src/components/NextMedicationCard.tsx
-   - src/components/MedicationListItem.tsx
-   - src/components/StatusLegend.tsx
-
-5. Atualize a HomeScreen para usar esses componentes.
-
-A HomeScreen deve conter:
-
-- saudação clara para Maria;
-- texto curto explicando o objetivo da tela;
-- card em destaque para o próximo medicamento;
-- resumo visual do dia com tomados, pendentes e atrasados;
-- lista curta de medicamentos de hoje;
-- legenda simples dos status;
-- botões ou ações claras, mas sem implementar navegação complexa ainda.
-
-Diretrizes de UI/UX:
-
-- A tela deve parecer mais polida e menos rudimentar.
-- Use boa hierarquia visual.
-- Use espaçamento generoso.
-- Use cards consistentes.
-- Use textos em português.
-- Use status com cor + texto, nunca apenas cor.
-- Evite excesso de informação.
-- Evite termos clínicos complexos.
-- Priorize fonte legível e elementos fáceis de tocar.
-- Pense em uma pessoa idosa usando a interface, mas sem infantilizar o design.
-- A interface deve transmitir calma, clareza e confiança.
-- A ação principal da tela deve ser fácil de identificar.
-- Não use ícones por enquanto, para evitar adicionar dependências.
-- Não use animações por enquanto.
-- Não adicione bibliotecas novas.
-- Não use expo-* diretamente em screens ou components.
-- Não implemente prescrição, recomendação clínica ou alteração de tratamento.
-- Não use dados reais de saúde.
-- Não implemente login, backend ou persistência.
-
-Importante:
-Se precisar criar tipos auxiliares para a Home, coloque-os em local adequado e explique a decisão. Não coloque lógica de montagem de dados diretamente na HomeScreen.
-
-Ao responder:
-1. Liste os arquivos criados/modificados.
-2. Explique brevemente as decisões de UI/UX tomadas.
-3. Explique como essas decisões ajudam na futura avaliação por heurísticas de Nielsen e SUS.
-4. Inclua uma checklist de teste local.
 
 ---
 
@@ -1242,3 +1058,93 @@ Do ponto de vista de usabilidade, o `MedicationGate` evita que as telas apareça
 - `Patient.age` pode receber valor padrão caso o banco retorne `null`, embora isso não apareça na UI.
 - A leitura assíncrona introduz novos estados de loading e erro que precisam ser testados em dispositivos reais.
 - Ainda não há testes automatizados para validar repository, mappers ou provider.
+
+---
+
+### Interação C18
+
+**Categoria:**  
+Backend / Supabase / Persistência / UX feedback / Tratamento de erro
+
+**Tela ou funcionalidade:**  
+Persistência das ações “Marcar como tomado” e “Desfazer” no Supabase.
+
+**Objetivo do prompt:**  
+Persistir no backend as ações de marcar medicamento como tomado e desfazer a ação, garantindo que o estado continue salvo após logout/login, refresh ou reabertura do app. A experiência visual deveria permanecer igual, mas agora com escrita real no Supabase, rollback em caso de erro e feedback amigável para o usuário.
+
+**Prompt enviado:**  
+Foi solicitado que Claude implementasse a persistência real dos métodos `markAsTaken` e `restoreLog` no `SupabaseMedicationRepository`, atualizasse o `MedicationProvider` para usar optimistic update com rollback em erro, adicionasse tratamento visual de erro no `FeedbackBanner` e mantivesse Home, lista, detalhe e histórico consistentes entre si.
+
+**Resumo da resposta do Claude:**  
+Claude atualizou o `SupabaseMedicationRepository` para que `markAsTaken` e `restoreLog` façam updates reais na tabela `public.medication_logs`. O método `markAsTaken` agora atualiza `status = 'taken'` e `taken_at = takenAt`, retornando o log atualizado do banco. O método `restoreLog` restaura o status anterior e o valor anterior de `taken_at`, respeitando a constraint do banco que exige `taken_at` preenchido apenas quando o status é `taken`.
+
+O cache temporário de logs criado na C17 foi removido, e a fonte de verdade passou a ser o Supabase. O `MedicationProvider` foi ajustado para manter optimistic update: a UI muda imediatamente após a ação, mas o app aguarda a confirmação do repository. Em caso de sucesso, o estado local é substituído pelo valor retornado pelo banco. Em caso de falha, o estado anterior é restaurado e uma mensagem amigável de erro é exibida.
+
+O `FeedbackBanner` foi atualizado para aceitar variantes de sucesso e erro. A variante de erro usa a paleta associada a atraso/alerta e mantém texto acessível, sem expor mensagens técnicas do Supabase para o usuário. A HomeScreen e a MedicationDetailScreen foram ajustadas para priorizar o banner de erro quando houver falha.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Médio
+
+**Problema ou limitação:**  
+A persistência principal agora funciona, mas ainda há pontos a evoluir. O app ainda não possui retry automático, realtime/multi-dispositivo, telemetria de erro ou histórico semanal/mensal. Em caso de falha de rede, a UI faz rollback e mostra erro, mas não tenta salvar novamente automaticamente. O histórico ainda depende da estrutura atual dos logs e não foi expandido para visão semanal nesta etapa.
+
+**Evidência:**  
+Arquivos modificados:
+- `src/repositories/SupabaseMedicationRepository.ts`
+- `src/components/FeedbackBanner.tsx`
+- `src/contexts/MedicationProvider.tsx`
+- `src/hooks/useTodayMedications.ts`
+- `src/hooks/useMedicationDetail.ts`
+- `src/screens/HomeScreen.tsx`
+- `src/screens/MedicationDetailScreen.tsx`
+
+Arquivos criados:
+- Nenhum.
+
+Schema:
+- Não foi alterado.
+
+**Checklist de validação local:**  
+- Reiniciar o Metro com `npx expo start -c`.
+- `npm run typecheck` passa sem erros.
+- Login com Maria carrega os dados da Maria.
+- Marcar Losartana como tomada altera a UI imediatamente.
+- O banner verde aparece com opção de “Desfazer”.
+- O resumo da Home é atualizado.
+- A lista é atualizada.
+- O detalhe da Losartana mostra que ela foi marcada como tomada.
+- O histórico passa a incluir Losartana.
+- Fazer logout e login novamente com Maria mantém Losartana como tomada.
+- Fechar e reabrir o app mantém o estado persistido.
+- Conferir no Supabase Studio se o log foi atualizado com `status = 'taken'` e `taken_at` preenchido.
+- Marcar Metformina como tomada e tocar em “Desfazer” antes do banner desaparecer.
+- Confirmar que Metformina volta para `pending`.
+- Fazer logout/login e confirmar que Metformina continua pendente.
+- Conferir no Supabase Studio se `taken_at` voltou para `null`.
+- Desligar a internet e tentar marcar um medicamento.
+- Confirmar que a UI faz rollback e mostra o banner vermelho de erro.
+- Religar a internet e tentar novamente.
+- Confirmar que Home, lista, detalhe e histórico continuam consistentes.
+- Confirmar que trocar de usuário não mistura dados entre Maria, Carlos e Ana.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é importante porque completa o ciclo de persistência principal do app. A interface deixa de apenas simular registros em memória e passa a salvar ações no backend, atendendo à exigência de persistência indicada pelo orientador.
+
+Do ponto de vista arquitetural, a interação valida a separação em camadas construída anteriormente. As telas continuam sem acessar Supabase diretamente; a persistência fica concentrada no repository e no provider. O `MedicationService` permanece puro, responsável apenas por derivar dados para a interface.
+
+Do ponto de vista de UX, a solução mantém resposta imediata por meio de optimistic update, mas também preserva confiabilidade ao fazer rollback em caso de falha. Isso contribui para a visibilidade do estado do sistema e para a confiança do usuário. O feedback de erro em linguagem simples evita expor detalhes técnicos e mantém a interface adequada para avaliação com participantes.
+
+**Possíveis riscos ou limitações:**  
+- Ainda não há retry automático para falhas temporárias de rede.
+- O app ainda não usa realtime; mudanças feitas em outro dispositivo não aparecem automaticamente.
+- Não há diferenciação visual entre tipos de erro, como falha de rede, RLS ou constraint.
+- Ainda não há histórico semanal ou agrupamento por vários dias.
+- O reset de cenário demo ainda não foi implementado no app.
+- Falhas de RLS devem ser corrigidas nas policies, nunca usando `service_role` no app.
+- A persistência funciona, mas ainda precisa de uma rodada de QA com diferentes usuários e cenários.

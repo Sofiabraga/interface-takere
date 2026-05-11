@@ -11,8 +11,10 @@ import {
 export interface UseMedicationDetailResult {
   detail: MedicationDetailView | null;
   lastTaken: LastTakenAction | null;
-  markAsTaken: (logId: string) => void;
-  undoLastTaken: () => void;
+  actionError: string | null;
+  markAsTaken: (logId: string) => Promise<void>;
+  undoLastTaken: () => Promise<void>;
+  dismissActionError: () => void;
 }
 
 export function useMedicationDetail(logId: string): UseMedicationDetailResult {
@@ -21,8 +23,10 @@ export function useMedicationDetail(logId: string): UseMedicationDetailResult {
     medications,
     schedules,
     lastTaken,
+    actionError,
     markAsTaken,
     undoLastTaken,
+    dismissActionError,
   } = useMedicationContext();
 
   const detail = useMemo(
@@ -38,7 +42,9 @@ export function useMedicationDetail(logId: string): UseMedicationDetailResult {
   return {
     detail,
     lastTaken,
+    actionError,
     markAsTaken,
     undoLastTaken,
+    dismissActionError,
   };
 }

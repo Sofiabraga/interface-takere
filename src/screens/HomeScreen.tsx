@@ -21,6 +21,7 @@ export function HomeScreen() {
     patient,
     dashboard,
     lastTaken,
+    actionError,
     markAsTaken,
     undoLastTaken,
   } = useTodayMedications();
@@ -61,7 +62,13 @@ export function HomeScreen() {
         subtitle="Aqui você acompanha seus medicamentos de hoje."
       />
 
-      {lastTaken ? (
+      {/* Error tem prioridade sobre success: enquanto o banner de
+          erro está visível (~6s), o de sucesso fica esperando; quando
+          o timer do erro expira, lastTaken volta a aparecer e o
+          usuário pode tentar Desfazer de novo. */}
+      {actionError ? (
+        <FeedbackBanner message={actionError} variant="error" />
+      ) : lastTaken ? (
         <FeedbackBanner
           message={`${lastTaken.medicationName} marcado como tomado.`}
           onUndo={undoLastTaken}
