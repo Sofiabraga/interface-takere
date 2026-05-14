@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -154,12 +153,6 @@ export function LoginScreen() {
               disabled={isSubmitting}
             />
           ))}
-
-          {isSubmitting ? (
-            <View style={styles.loadingRow}>
-              <ActivityIndicator color={colors.primary} />
-            </View>
-          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -231,9 +224,5 @@ const styles = StyleSheet.create({
   helperText: {
     ...typography.body,
     color: colors.textSecondary,
-  },
-  loadingRow: {
-    alignItems: 'center',
-    marginTop: spacing.md,
   },
 });

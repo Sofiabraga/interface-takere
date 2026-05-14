@@ -49,11 +49,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     let alive = true;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!alive) return;
-      setSession(data.session);
-      setIsLoading(false);
-    });
+    // Catch defensivo: `getSession()` lê do AsyncStorage e
+    // normalmente não rejeita, mas se rejeitar (ex.: storage
+    // corrompido) o isLoading ficaria preso em true e a RootNavigator
+    // não sairia da tela de "Carregando…". Forçamos a transição para
+    // false e tratamos como ausência de sessão.
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!alive) return;
+        setSession(data.session);
+        setIsLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (!alive) return;
+        if (__DEV__) {
+          console.warn('[AuthProvider] getSession falhou', err);
+        }
+        setSession(null);
+        setIsLoading(false);
+      });
 
     const {
       data: { subscription },

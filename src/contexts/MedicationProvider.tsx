@@ -87,6 +87,20 @@ export function MedicationProvider({
   // e undoLastTaken). Logout durante um persist em voo desmonta o
   // provider; sem este flag o catch tentaria atualizar estado morto.
   const mountedRef = useRef(true);
+  // Serializa operações por logId. Resolve dois problemas:
+  //   (a) duplo-toque rápido em "Marcar como tomado" — silenciosamente
+  //       descartado (a segunda tap volta de imediato porque a
+  //       primeira ainda está em voo);
+  //   (b) "Desfazer" enquanto o markAsTaken ainda está persistindo —
+  //       o undo aguarda a primeira op terminar antes de disparar a
+  //       segunda; sem isso, o undo poderia chegar ANTES do mark no
+  //       banco e o estado final ficaria 'taken' (inconsistência
+  //       permanente).
+  // O usuário não precisa enxergar isso — não há "Salvando…" no
+  // botão; o feedback do optimistic update já comunica que o tap
+  // teve efeito. Em casos extremos (rede ruim), o tap em Desfazer
+  // pode demorar até o mark terminar antes de aparecer.
+  const ongoingOpsRef = useRef(new Map<string, Promise<void>>());
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -137,6 +151,7 @@ export function MedicationProvider({
     setLastTaken(null);
     setActionError(null);
     previousLogRef.current = null;
+    ongoingOpsRef.current.clear();
     clearFeedbackTimer();
     clearActionErrorTimer();
   }, [clearFeedbackTimer, clearActionErrorTimer]);
@@ -202,6 +217,17 @@ export function MedicationProvider({
     [logs, schedules, medications],
   );
 
+  // Registra a Promise da op atual no Map e remove ao terminar.
+  // Outras chamadas em sequência usam o mesmo Map para esperar/dedup.
+  const trackOp = useCallback((logId: string, op: Promise<void>) => {
+    ongoingOpsRef.current.set(logId, op);
+    void op.finally(() => {
+      if (ongoingOpsRef.current.get(logId) === op) {
+        ongoingOpsRef.current.delete(logId);
+      }
+    });
+  }, []);
+
   // Optimistic update + persist. Se o backend rejeitar, faz rollback
   // para o estado anterior, limpa o banner de sucesso e exibe o
   // banner de erro. Em sucesso, substitui o optimistic pelo registro
@@ -209,6 +235,9 @@ export function MedicationProvider({
   // taken_at (precisão de ms, fuso etc).
   const markAsTaken = useCallback(
     async (logId: string): Promise<void> => {
+      // Dedup: outro mark para o mesmo logId ainda está em voo.
+      if (ongoingOpsRef.current.has(logId)) return;
+
       const target = logs.find((log) => log.id === logId);
       if (!target || target.status === 'taken') return;
 
@@ -232,30 +261,35 @@ export function MedicationProvider({
       clearActionErrorTimer();
       armFeedbackTimer();
 
-      try {
-        const persisted = await resolvedRepository.markAsTaken(logId, takenAt);
-        if (!mountedRef.current) return;
-        if (!persisted) {
-          throw new Error('Update retornou vazio (RLS ou id inválido).');
+      const op = (async () => {
+        try {
+          const persisted = await resolvedRepository.markAsTaken(logId, takenAt);
+          if (!mountedRef.current) return;
+          if (!persisted) {
+            throw new Error('Update retornou vazio (RLS ou id inválido).');
+          }
+          // Substitui optimistic pelo registro confirmado pelo banco.
+          setLogs((prev) =>
+            prev.map((log) => (log.id === logId ? persisted : log)),
+          );
+        } catch (err) {
+          if (!mountedRef.current) return;
+          if (__DEV__) {
+            console.warn('[MedicationProvider] markAsTaken falhou', err);
+          }
+          // Rollback completo: estado anterior, sem banner de sucesso.
+          setLogs((prev) =>
+            prev.map((log) => (log.id === logId ? previous : log)),
+          );
+          setLastTaken(null);
+          previousLogRef.current = null;
+          clearFeedbackTimer();
+          showActionError();
         }
-        // Substitui optimistic pelo registro confirmado pelo banco.
-        setLogs((prev) =>
-          prev.map((log) => (log.id === logId ? persisted : log)),
-        );
-      } catch (err) {
-        if (!mountedRef.current) return;
-        if (__DEV__) {
-          console.warn('[MedicationProvider] markAsTaken falhou', err);
-        }
-        // Rollback completo: estado anterior, sem banner de sucesso.
-        setLogs((prev) =>
-          prev.map((log) => (log.id === logId ? previous : log)),
-        );
-        setLastTaken(null);
-        previousLogRef.current = null;
-        clearFeedbackTimer();
-        showActionError();
-      }
+      })();
+
+      trackOp(logId, op);
+      await op;
     },
     [
       logs,
@@ -265,6 +299,7 @@ export function MedicationProvider({
       clearFeedbackTimer,
       clearActionErrorTimer,
       showActionError,
+      trackOp,
     ],
   );
 
@@ -278,6 +313,21 @@ export function MedicationProvider({
     const previous = previousLogRef.current;
     if (!previous) return;
 
+    // Aguarda o mark (ou um undo anterior) terminar antes de disparar
+    // este undo — evita race onde o undo chega no banco antes do mark
+    // e o estado final fica errado. catch(()=>{}) garante que mesmo
+    // se a op anterior falhou, este undo segue (sobre a base do
+    // estado já rebobinado pelo rollback do mark).
+    const prior = ongoingOpsRef.current.get(previous.id);
+    if (prior) {
+      await prior.catch(() => undefined);
+      if (!mountedRef.current) return;
+      // Após esperar, re-checamos: se o mark falhou e o rollback
+      // limpou previousLogRef, não temos mais para onde desfazer.
+      const stillPrevious = previousLogRef.current;
+      if (!stillPrevious || stillPrevious.id !== previous.id) return;
+    }
+
     const lastTakenSnapshot = lastTaken;
     // Captura o estado atual ('taken') antes do optimistic, para
     // poder reaplicá-lo em caso de erro.
@@ -289,34 +339,39 @@ export function MedicationProvider({
     setLastTaken(null);
     clearFeedbackTimer();
 
-    try {
-      const persisted = await resolvedRepository.restoreLog(previous);
-      if (!mountedRef.current) return;
-      if (!persisted) {
-        throw new Error('Update retornou vazio (RLS ou id inválido).');
-      }
-      setLogs((prev) =>
-        prev.map((log) => (log.id === previous.id ? persisted : log)),
-      );
-      previousLogRef.current = null;
-    } catch (err) {
-      if (!mountedRef.current) return;
-      if (__DEV__) {
-        console.warn('[MedicationProvider] restoreLog falhou', err);
-      }
-      // Rollback do optimistic: volta para 'taken' e re-arma o
-      // banner de sucesso para uma nova tentativa de Desfazer.
-      if (currentTaken) {
+    const op = (async () => {
+      try {
+        const persisted = await resolvedRepository.restoreLog(previous);
+        if (!mountedRef.current) return;
+        if (!persisted) {
+          throw new Error('Update retornou vazio (RLS ou id inválido).');
+        }
         setLogs((prev) =>
-          prev.map((log) => (log.id === previous.id ? currentTaken : log)),
+          prev.map((log) => (log.id === previous.id ? persisted : log)),
         );
+        previousLogRef.current = null;
+      } catch (err) {
+        if (!mountedRef.current) return;
+        if (__DEV__) {
+          console.warn('[MedicationProvider] restoreLog falhou', err);
+        }
+        // Rollback do optimistic: volta para 'taken' e re-arma o
+        // banner de sucesso para uma nova tentativa de Desfazer.
+        if (currentTaken) {
+          setLogs((prev) =>
+            prev.map((log) => (log.id === previous.id ? currentTaken : log)),
+          );
+        }
+        if (lastTakenSnapshot) {
+          setLastTaken(lastTakenSnapshot);
+          armFeedbackTimer();
+        }
+        showActionError();
       }
-      if (lastTakenSnapshot) {
-        setLastTaken(lastTakenSnapshot);
-        armFeedbackTimer();
-      }
-      showActionError();
-    }
+    })();
+
+    trackOp(previous.id, op);
+    await op;
   }, [
     lastTaken,
     logs,
@@ -324,6 +379,7 @@ export function MedicationProvider({
     clearFeedbackTimer,
     armFeedbackTimer,
     showActionError,
+    trackOp,
   ]);
 
   const dismissFeedback = useCallback(() => {

@@ -1148,3 +1148,95 @@ Do ponto de vista de UX, a solução mantém resposta imediata por meio de optim
 - O reset de cenário demo ainda não foi implementado no app.
 - Falhas de RLS devem ser corrigidas nas policies, nunca usando `service_role` no app.
 - A persistência funciona, mas ainda precisa de uma rodada de QA com diferentes usuários e cenários.
+
+---
+
+### Interação C19
+
+**Categoria:**  
+UX / Tratamento de erro / Loading / Acessibilidade / Robustez de rede
+
+**Tela ou funcionalidade:**  
+Estados de carregamento, erro e recuperação em fluxos dependentes do Supabase.
+
+**Objetivo do prompt:**  
+Melhorar a experiência do app em situações de carregamento, erro de rede, restauração de sessão, falha ao carregar medicamentos e falha ao salvar ações no backend. A etapa buscou tornar a interface mais clara, acessível e robusta após a integração com Supabase e persistência real.
+
+**Prompt enviado:**  
+Foi solicitado que Claude revisasse e melhorasse os estados de loading e erro do app, especialmente na restauração de sessão, carregamento inicial dos medicamentos, troca de usuário, reload após erro e ações de marcar como tomado/desfazer. Também foi pedido que a solução mantivesse a UI limpa, acessível e consistente com o restante da interface, sem adicionar dependências novas ou alterar funcionalidades principais.
+
+**Resumo da resposta do Claude:**  
+Claude criou os componentes reutilizáveis `LoadingState` e `ErrorState`, substituindo spinners e mensagens inline por componentes padronizados. O `RootNavigator` passou a usar `LoadingState` durante a restauração da sessão, evitando um spinner sem contexto. O `MedicationGate` foi refatorado para usar `LoadingState` enquanto carrega medicamentos e `ErrorState` quando ocorre falha, com botão “Tentar novamente” ligado ao `reload`.
+
+Também foram feitos ajustes no `MedicationProvider` para lidar melhor com ações simultâneas. Foi introduzida uma serialização de operações por `logId` usando `Map<string, Promise<void>>`, evitando problemas como duplo toque em “Marcar como tomado” ou tentativa de “Desfazer” enquanto a marcação ainda está em andamento. Isso reduz o risco de divergência entre estado local e banco de dados em redes lentas.
+
+O `AuthProvider` recebeu um `catch` defensivo em `getSession()`, evitando que o app fique preso indefinidamente em loading caso a restauração de sessão falhe. A `LoginScreen` foi simplificada removendo um `ActivityIndicator` redundante, deixando apenas o texto “Entrando…” no botão durante o login.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A etapa melhorou o tratamento de loading e erro, mas ainda não implementou retry automático, realtime, pull-to-refresh, telemetria estruturada ou reset de cenário demo. Em falhas de rede, o usuário ainda precisa tentar novamente manualmente. Além disso, histórico semanal e agrupamento por vários dias ficaram para a próxima etapa.
+
+**Evidência:**  
+Arquivos criados:
+- `src/components/LoadingState.tsx`
+- `src/components/ErrorState.tsx`
+
+Arquivos modificados:
+- `src/navigation/RootNavigator.tsx`
+- `src/navigation/MedicationGate.tsx`
+- `src/contexts/MedicationProvider.tsx`
+- `src/contexts/AuthProvider.tsx`
+- `src/screens/LoginScreen.tsx`
+
+Schema:
+- Não foi alterado.
+
+Dependências:
+- Nenhuma dependência nova foi adicionada.
+
+**Checklist de validação local:**  
+- Rodar `npx expo start -c`.
+- Abrir o app sem sessão e verificar se aparece `LoadingState` antes da `LoginScreen`.
+- Fazer login com Maria e verificar a transição para “Carregando medicamentos...”.
+- Confirmar que a Home aparece após o carregamento.
+- Fazer logout e login com Carlos, verificando que não aparecem dados da sessão anterior.
+- Desligar a internet antes de carregar os medicamentos.
+- Confirmar que aparece `ErrorState` com mensagem amigável e botão “Tentar novamente”.
+- Religar a internet e tocar em “Tentar novamente”.
+- Confirmar que os medicamentos carregam corretamente.
+- Fazer duplo toque rápido em “Marcar como tomado” e confirmar que a ação ocorre apenas uma vez.
+- Em rede lenta, marcar um medicamento e tocar em “Desfazer” rapidamente.
+- Confirmar que o estado final no Supabase permanece correto.
+- Testar erro de ação desligando a internet antes de desfazer ou marcar como tomado.
+- Confirmar rollback da UI e banner de erro amigável.
+- Confirmar que a `LoginScreen` não mostra spinner redundante no rodapé.
+- Testar erro de login e verificar mensagem amigável.
+- Rodar `npm run typecheck`.
+- Verificar que screens e services não importam Supabase diretamente.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque trata a interface como uma aplicação conectada a backend real, sujeita a carregamento, falhas de rede e inconsistências temporárias. O uso de componentes padronizados de loading e erro melhora a previsibilidade da interface e reduz a chance de o usuário interpretar uma tela vazia como falha ou travamento.
+
+Do ponto de vista das heurísticas de Nielsen, a etapa contribui principalmente para visibilidade do estado do sistema, prevenção de erros, recuperação de erros e ajuda ao usuário. As mensagens de erro são apresentadas em português e não expõem detalhes técnicos do Supabase, o que melhora a compreensão por participantes não técnicos.
+
+Do ponto de vista do SUS, a etapa pode contribuir para a percepção de facilidade de uso, confiança e consistência, pois o usuário recebe feedback claro quando o sistema está carregando ou quando algo falha.
+
+A serialização de ações por medicamento também é relevante do ponto de vista técnico e de UX, pois evita inconsistências provocadas por duplo toque ou por operações concorrentes em redes lentas.
+
+**Possíveis riscos ou limitações:**  
+- Ainda não há retry automático com backoff.
+- Ainda não há atualização realtime/multi-dispositivo.
+- Ainda não há pull-to-refresh manual.  
+- Ainda não há telemetria estruturada para diferenciar tipos de erro.
+- O reset do cenário demo ainda não foi implementado.
+- A experiência em redes muito lentas ainda depende de tentativa manual do usuário.
+- O histórico semanal e percentual por dia ainda não foram implementados.
+- Alguns cenários de falha, como storage corrompido, são difíceis de reproduzir manualmente.
