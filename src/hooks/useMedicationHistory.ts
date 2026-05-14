@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { useMedicationContext } from '../contexts/MedicationProvider';
 import {
-  MedicationHistoryView,
   MedicationService,
+  WeeklyHistoryView,
 } from '../services/MedicationService';
 
 export interface UseMedicationHistoryResult {
-  history: MedicationHistoryView;
+  history: WeeklyHistoryView;
 }
 
 export function useMedicationHistory(): UseMedicationHistoryResult {
@@ -14,7 +14,7 @@ export function useMedicationHistory(): UseMedicationHistoryResult {
 
   const history = useMemo(
     () =>
-      MedicationService.getMedicationHistory(patientId ?? '', {
+      MedicationService.getWeeklyHistory(patientId ?? '', {
         logs,
         schedules,
         medications,

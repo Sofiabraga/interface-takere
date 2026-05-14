@@ -15,6 +15,18 @@ import {
 
 const LOG_COLUMNS = 'id, schedule_id, scheduled_for, status, taken_at';
 
+// Janela de 7 dias (hoje + 6 anteriores) usada para alimentar tanto a
+// Home (que filtra para "hoje" no service) quanto a HistoryScreen
+// (que mostra o resumo semanal). Calculada em horário local do
+// dispositivo e enviada como ISO em UTC ao Postgres — o que conta é
+// que a fronteira "início do dia local" seja a mesma em ambos os lados.
+function getWeekWindowStartIso(): string {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  start.setDate(start.getDate() - 6);
+  return start.toISOString();
+}
+
 // Implementação Supabase do MedicationRepository — leitura e escrita
 // reais. A C17 mantinha um logsCache local em markAsTaken/restoreLog
 // porque a persistência ainda não existia; em C18 esse cache foi
@@ -63,17 +75,23 @@ export class SupabaseMedicationRepository implements MedicationRepository {
     // Mesma lógica de RLS transitiva: medication_logs → schedule →
     // medication.profile_id. Filtramos pelo profile_id do dono via
     // join aninhado.
+    //
+    // O `gte('scheduled_for', ...)` recorta a janela para os últimos
+    // 7 dias — o suficiente para o resumo semanal da HistoryScreen.
+    // A Home não é afetada porque o MedicationService filtra para
+    // "hoje" antes de montar o dashboard.
     const { data, error } = await this.client
       .from('medication_logs')
       .select(
         `${LOG_COLUMNS}, medication_schedules!inner(medications!inner(profile_id))`,
       )
       .eq('medication_schedules.medications.profile_id', patientId)
+      .gte('scheduled_for', getWeekWindowStartIso())
       .order('scheduled_for', { ascending: true })
       .returns<MedicationLogRow[]>();
 
     if (error) {
-      throw new Error(`Falha ao carregar registros do dia: ${error.message}`);
+      throw new Error(`Falha ao carregar registros da semana: ${error.message}`);
     }
     return (data ?? []).map(mapLog);
   }

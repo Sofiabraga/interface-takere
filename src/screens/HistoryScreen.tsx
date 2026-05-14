@@ -3,7 +3,10 @@ import { AppHeader } from '../components/AppHeader';
 import { Card } from '../components/Card';
 import { EmptyState } from '../components/EmptyState';
 import { ScreenContainer } from '../components/ScreenContainer';
+import { SectionTitle } from '../components/SectionTitle';
 import { StatusBadge } from '../components/StatusBadge';
+import { WeeklyDayProgressItem } from '../components/WeeklyDayProgressItem';
+import { WeeklySummaryCard } from '../components/WeeklySummaryCard';
 import { useMedicationHistory } from '../hooks/useMedicationHistory';
 import { useAppNavigation } from '../navigation/useAppNavigation';
 import { HistoryEntryView } from '../services/MedicationService';
@@ -12,34 +15,54 @@ import { colors, spacing, typography } from '../theme';
 export function HistoryScreen() {
   const navigation = useAppNavigation();
   const { history } = useMedicationHistory();
+  const hasWeek = history.summary.totalPlanned > 0;
+  const hasEntries = history.entries.length > 0;
 
   return (
     <ScreenContainer>
       <AppHeader
-        title="Histórico de hoje"
-        subtitle="Veja os medicamentos que você marcou como tomados hoje."
+        title="Histórico da semana"
+        subtitle="Veja os medicamentos que você registrou nos últimos 7 dias."
         onBack={() => navigation.goBack()}
       />
 
-      {history.total === 0 ? (
+      {!hasWeek && !hasEntries ? (
         <EmptyState
-          title="Nenhuma tomada registrada"
+          title="Sem registros nesta semana"
           message="Quando você marcar um medicamento como tomado, ele aparece aqui."
         />
       ) : (
         <>
-          <Text style={styles.summaryText}>
-            {summaryLabel(history.total)}
-          </Text>
+          <WeeklySummaryCard summary={history.summary} />
+
+          <SectionTitle>Resumo por dia</SectionTitle>
           <Card>
-            {history.entries.map((entry, index) => (
-              <HistoryRow
-                key={entry.id}
-                entry={entry}
+            {history.days.map((day, index) => (
+              <WeeklyDayProgressItem
+                key={day.isoDate}
+                day={day}
                 showDivider={index > 0}
               />
             ))}
           </Card>
+
+          <SectionTitle>Medicamentos registrados</SectionTitle>
+          {hasEntries ? (
+            <Card>
+              {history.entries.map((entry, index) => (
+                <HistoryRow
+                  key={entry.id}
+                  entry={entry}
+                  showDivider={index > 0}
+                />
+              ))}
+            </Card>
+          ) : (
+            <EmptyState
+              title="Nenhuma tomada registrada"
+              message="Quando você marcar um medicamento como tomado, ele aparece aqui."
+            />
+          )}
         </>
       )}
     </ScreenContainer>
@@ -90,18 +113,7 @@ function TimeLine({ label, value }: TimeLineProps) {
   );
 }
 
-function summaryLabel(total: number): string {
-  if (total === 1) {
-    return 'Você registrou 1 medicamento como tomado hoje.';
-  }
-  return `Você registrou ${total} medicamentos como tomados hoje.`;
-}
-
 const styles = StyleSheet.create({
-  summaryText: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
   row: {
     paddingVertical: spacing.md,
     gap: spacing.sm,

@@ -1240,3 +1240,94 @@ A serialização de ações por medicamento também é relevante do ponto de vis
 - A experiência em redes muito lentas ainda depende de tentativa manual do usuário.
 - O histórico semanal e percentual por dia ainda não foram implementados.
 - Alguns cenários de falha, como storage corrompido, são difíceis de reproduzir manualmente.
+
+---
+
+### Interação C20
+
+**Categoria:**  
+Design de UI/UX / Histórico semanal / Visualização de dados simples / Supabase / Serviço de domínio
+
+**Tela ou funcionalidade:**  
+Aprimoramento da HistoryScreen com resumo semanal e percentual de medicamentos registrados por dia.
+
+**Objetivo do prompt:**  
+Melhorar a tela de histórico para deixá-la mais útil, bonita e informativa, adicionando uma visão semanal simples com percentual de medicamentos registrados por dia e resumo geral da semana. A funcionalidade deveria continuar sendo apenas de organização e registro, sem assumir caráter clínico ou julgamento sobre o tratamento.
+
+**Prompt enviado:**  
+Foi solicitado que Claude aprimorasse a `HistoryScreen` com um card de resumo semanal, percentual geral da semana, quantidade de medicamentos registrados e previstos, visualização por dia da semana e manutenção da lista de registros existente. Também foi pedido que o cálculo fosse feito de forma pura no `MedicationService`, que o hook `useMedicationHistory` entregasse os novos dados para a tela, e que o Supabase carregasse logs suficientes para os últimos 7 dias.
+
+**Resumo da resposta do Claude:**  
+Claude criou os componentes `WeeklySummaryCard` e `WeeklyDayProgressItem`, responsáveis por exibir o resumo semanal e os percentuais por dia. A `HistoryScreen` foi atualizada para apresentar uma hierarquia composta por resumo da semana, resumo por dia e lista de medicamentos registrados.
+
+O `MedicationService` recebeu a função pura `getWeeklyHistory`, além de novos tipos de view-model: `WeeklyDaySummaryView`, `WeeklySummaryView` e `WeeklyHistoryView`. Essa função calcula a janela dos últimos 7 dias, agrupa os logs por dia, calcula quantidade prevista, quantidade registrada e percentual de registro para cada dia e para a semana como um todo.
+
+O hook `useMedicationHistory` foi atualizado para expor os novos dados da visão semanal. O `SupabaseMedicationRepository` foi ajustado para carregar logs a partir do início do dia local de 6 dias atrás, usando `scheduled_for` como referência. Como consequência, o `MedicationService.getTodayDashboard` passou a filtrar os logs de hoje, evitando que a Home exibisse logs antigos como se fossem do dia atual.
+
+O `seed.sql` também foi atualizado para inserir logs históricos fictícios dos últimos 6 dias para os três usuários demo. Maria passou a ter uma semana variada, Carlos um cenário com poucos registros e Ana um cenário quase todo registrado. O cenário de hoje usado por Home, lista e detalhe foi preservado.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Médio
+
+**Problema ou limitação:**  
+A melhoria torna o histórico mais informativo, mas exige rodar novamente o `seed.sql` para que os dados históricos apareçam no Supabase. A visualização semanal ainda é limitada aos últimos 7 dias e não possui navegação entre semanas, paginação ou histórico mensal. Também não há gráfico complexo, por escolha consciente de simplicidade e adequação à avaliação de usabilidade.
+
+**Evidência:**  
+Arquivos criados:
+- `src/components/WeeklySummaryCard.tsx`
+- `src/components/WeeklyDayProgressItem.tsx`
+
+Arquivos modificados:
+- `src/services/MedicationService.ts`
+- `src/hooks/useMedicationHistory.ts`
+- `src/screens/HistoryScreen.tsx`
+- `src/repositories/SupabaseMedicationRepository.ts`
+- `supabase/seed.sql`
+
+**Checklist de validação local:**  
+- Rodar novamente `supabase/seed.sql` no Supabase Studio.
+- Reiniciar o app.
+- Logar como Maria.
+- Confirmar que a Home continua mostrando os 4 itens de hoje.
+- Acessar o histórico e verificar o título “Histórico da semana”.
+- Confirmar que aparece o card de resumo semanal.
+- Confirmar que o percentual geral da semana aparece.
+- Confirmar que o resumo por dia mostra Hoje, Ontem e os dias anteriores.
+- Confirmar que cada dia mostra “X de Y registrados”.
+- Confirmar que cada dia mostra o percentual correspondente.
+- Confirmar que a barra horizontal é proporcional ao percentual.
+- Confirmar que a lista de medicamentos registrados continua existindo.
+- Marcar um medicamento como tomado e voltar ao histórico.
+- Confirmar que o percentual de hoje e o percentual da semana foram atualizados.
+- Desfazer a ação e confirmar que os percentuais voltam ao estado anterior.
+- Logar como Carlos e verificar um percentual semanal mais baixo.
+- Logar como Ana e verificar um percentual semanal mais alto.
+- Confirmar que não aparecem dados de outro usuário.
+- Testar com leitor de tela se cada linha de dia é anunciada com dia, data, quantidade registrada e percentual.
+- Rodar `npx tsc --noEmit`.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque melhora a capacidade da interface de apresentar informações agregadas sem transformar o app em uma ferramenta clínica. O histórico deixa de ser apenas uma lista de eventos e passa a oferecer uma visão resumida da semana, ajudando o usuário a compreender seus próprios registros.
+
+Do ponto de vista de IHC, a solução contribui para visibilidade do estado do sistema, reconhecimento em vez de memorização e estética minimalista. A visualização por dia usa texto e barras simples, sem depender exclusivamente de cor e sem introduzir gráficos complexos.
+
+Do ponto de vista do SUS, a funcionalidade pode aumentar a percepção de utilidade e integração do sistema, pois a marcação de medicamentos passa a impactar não apenas a lista e o detalhe, mas também um resumo semanal compreensível.
+
+A escolha do termo “registrados” em vez de “consumidos” é importante para o TCC, pois o app registra uma ação declarada pelo usuário, mas não comprova clinicamente o consumo do medicamento. Isso mantém o escopo do sistema como organização e registro, não avaliação clínica.
+
+**Possíveis riscos ou limitações:**  
+- É necessário rodar novamente o `seed.sql` para visualizar os dados históricos.
+- A visão cobre apenas os últimos 7 dias.
+- Não há navegação entre semanas.
+- Não há histórico mensal.
+- Não há paginação para históricos longos.
+- A query do Supabase agora carrega mais logs, o que pode exigir paginação em escala maior.
+- A barra de progresso é apenas reforço visual; a informação principal precisa continuar sendo textual.
+- Percentuais podem causar sensação de julgamento se a linguagem não for cuidadosamente mantida neutra.
+- A funcionalidade ainda depende da consistência dos logs gerados no seed ou no backend.
