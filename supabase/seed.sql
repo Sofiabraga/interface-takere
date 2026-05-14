@@ -1,25 +1,55 @@
 -- ============================================================
--- TCC Takere — Seed de dados fictícios
+-- TCC Takere — Seed / Reset do cenário demo
 -- ============================================================
--- Pré-requisito: os 3 usuários demo já devem ter sido criados em
--- Authentication → Users (com Auto Confirm User ativo) usando os
--- emails:
+-- Este é o ÚNICO script necessário tanto para a configuração
+-- inicial do banco quanto para resetar o cenário demo antes de
+-- cada banca, avaliação heurística ou sessão de teste com SUS.
+--
+-- Quando rodar:
+--   - Configuração inicial do projeto Supabase.
+--   - No dia da banca / avaliação, antes da sessão.
+--   - Sempre que quiser voltar Maria/Carlos/Ana ao cenário canônico.
+--
+-- O que este script faz (em ordem):
+--   1. Verifica que os 3 usuários demo existem em auth.users.
+--   2. Apaga medications/schedules/logs das 3 contas demo (cascata).
+--   3. Atualiza profiles (display_name, age, tech_familiarity).
+--   4. Recria medicamentos, horários e logs de "hoje" + histórico
+--      dos últimos 6 dias para alimentar a HistoryScreen semanal.
+--   5. Emite SELECT final de conferência por usuário.
+--
+-- O que este script NÃO toca:
+--   - Linhas de auth.users (usuários e senhas demo são preservados).
+--   - Schema, RLS policies, triggers (definidos em schema.sql).
+--   - Dados de QUALQUER outro usuário fora dos 3 emails demo abaixo
+--     (todos os DELETEs/INSERTs são filtrados por email).
+--
+-- Pré-requisito: os 3 usuários demo devem existir em
+-- Authentication → Users (Auto Confirm User ativo) com os emails:
 --   maria.demo@takere.test
 --   carlos.demo@takere.test
 --   ana.demo@takere.test
+-- O script encontra os UUIDs por email — não é necessário copiar/
+-- colar UUIDs em lugar nenhum.
 --
--- Este script encontra os UUIDs por email — não é necessário
--- copiar/colar UUIDs em lugar nenhum.
---
--- Idempotente: pode rodar várias vezes; apaga os dados das 3
--- contas demo antes de inserir os novos.
+-- Idempotente: pode rodar quantas vezes quiser; cada execução
+-- restaura o mesmo cenário canônico.
 --
 -- Fuso: assume 'America/Sao_Paulo'. Para outro fuso, troque o
 -- literal nos cálculos de scheduled_for/taken_at.
 --
 -- Datação dos logs: usa current_date + horário fixo. Logs ficam
--- "datados de hoje" toda vez que o seed roda. Para reproduzir o
--- cenário no dia da banca, basta rodar o seed naquele dia.
+-- "datados de hoje" toda vez que o script roda. Para reproduzir o
+-- cenário no dia da banca, rode o script naquele dia.
+--
+-- Segurança:
+--   - Rode SEMPRE no SQL Editor do Supabase Studio, autenticado
+--     como dono do projeto. Nunca chame este script a partir do
+--     app, de uma Edge Function ou de qualquer ambiente compartilhado.
+--   - Nunca rode em um projeto Supabase que contenha dados reais
+--     de usuários — o filtro por email protege os 3 demos, mas o
+--     escopo de teste deste TCC pressupõe um projeto exclusivo de
+--     demonstração.
 -- ============================================================
 
 -- ------------------------------------------------------------
@@ -363,3 +393,36 @@ begin
     end loop;
   end loop;
 end $$;
+
+-- ------------------------------------------------------------
+-- 7. Conferência final — uma linha por usuário demo
+-- ------------------------------------------------------------
+-- Use o resultado para validar visualmente o cenário restaurado.
+-- Esperado em qualquer dia (porque o seed é determinístico):
+--
+--   ana.demo@takere.test    | 3 meds | 3 sched | 21 logs | 20 taken | 1 late | 0 pending
+--   carlos.demo@takere.test | 2 meds | 2 sched | 14 logs |  4 taken | 8 late | 2 pending
+--   maria.demo@takere.test  | 4 meds | 4 sched | 28 logs | 20 taken | 6 late | 2 pending
+--
+-- Se aparecer algo diferente, NÃO entre na banca com esse estado —
+-- rode o script de novo e confira; provavelmente o script foi
+-- interrompido na metade.
+select
+  u.email,
+  count(distinct m.id)                                   as medications,
+  count(distinct s.id)                                   as schedules,
+  count(ml.id)                                           as logs_total,
+  count(ml.id) filter (where ml.status = 'taken')        as taken,
+  count(ml.id) filter (where ml.status = 'late')         as late,
+  count(ml.id) filter (where ml.status = 'pending')      as pending
+from auth.users u
+left join public.medications m            on m.profile_id = u.id
+left join public.medication_schedules s   on s.medication_id = m.id
+left join public.medication_logs ml       on ml.schedule_id = s.id
+where u.email in (
+  'maria.demo@takere.test',
+  'carlos.demo@takere.test',
+  'ana.demo@takere.test'
+)
+group by u.email
+order by u.email;

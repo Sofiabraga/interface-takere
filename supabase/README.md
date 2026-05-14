@@ -67,11 +67,19 @@ substitui por "Maria Silva", "Carlos Oliveira", "Ana Souza" e preenche
 
 ---
 
-## 3. Aplicar o seed
+## 3. Popular ou resetar o cenário demo
+
+O mesmo arquivo — [`seed.sql`](./seed.sql) — é usado para a
+configuração inicial **e** para o reset antes de cada banca ou
+sessão de avaliação. Não há dois scripts; é só um.
+
+### Aplicar pela primeira vez
 
 1. **SQL Editor → New query**.
 2. Cole o conteúdo de [`seed.sql`](./seed.sql).
 3. **Run**.
+4. Confira o `SELECT` final: 3 linhas (uma por usuário demo) com os
+   números esperados (ver "Conferência" abaixo).
 
 O seed:
 - confere que os 3 usuários existem (falha cedo se algum estiver
@@ -79,12 +87,63 @@ O seed:
 - apaga medications/schedules/logs anteriores das 3 contas demo
   (idempotente — pode rodar várias vezes);
 - atualiza os 3 `profiles` com `display_name`, `age` e `tech_familiarity`;
-- cria os medicamentos, horários e logs do dia atual:
+- cria os medicamentos, horários e logs de **hoje** + dos **últimos 6
+  dias** (alimenta a HistoryScreen semanal):
   - **Maria** — 4 medicamentos (Omeprazol tomado, Losartana atrasada,
-    Metformina pendente, Sinvastatina pendente);
+    Metformina pendente, Sinvastatina pendente); histórico variado.
   - **Carlos** — 2 medicamentos pendentes (Atorvastatina, Captopril);
+    poucos registros na semana.
   - **Ana** — 3 medicamentos todos tomados (Vitamina D, Ferro quelato,
-    Multivitamínico).
+    Multivitamínico); histórico quase completo.
+
+### 🎯 Antes da banca ou sessão de avaliação
+
+> **Rode o `seed.sql` no mesmo dia da sessão.** Os logs usam
+> `current_date`, então a data é fixada na hora do reset; rodar na
+> véspera deixa o cenário "envelhecido" um dia.
+
+Checklist:
+
+1. Abra o Supabase Studio do projeto de demonstração.
+2. **SQL Editor → New query** → cole `seed.sql` → **Run**.
+3. Aguarde a mensagem `Success. No rows returned` no console, exceto
+   pelo `SELECT` final que retorna 3 linhas (Maria, Carlos, Ana).
+4. **Confira que os números batem** com a tabela abaixo. Se não
+   baterem, rode o script de novo — provavelmente foi interrompido na
+   metade.
+5. **Saia e entre de novo no app** com cada persona (logout no botão
+   "Sair" na Home + login). O app mantém em memória o estado da
+   sessão anterior; logout/login força um `listLogs` fresco do
+   Supabase com o cenário recém-resetado.
+
+### Conferência esperada
+
+Linha por usuário no `SELECT` final do `seed.sql`:
+
+| email | meds | sched | logs | taken | late | pending |
+|---|---|---|---|---|---|---|
+| `ana.demo@takere.test`    | 3 | 3 | 21 | 20 | 1 | 0 |
+| `carlos.demo@takere.test` | 2 | 2 | 14 |  4 | 8 | 2 |
+| `maria.demo@takere.test`  | 4 | 4 | 28 | 20 | 6 | 2 |
+
+(28 = 4 × 7 dias; 21 = 3 × 7; 14 = 2 × 7. Se o total estiver diferente
+disso, o seed foi interrompido.)
+
+### O que o reset preserva
+
+- **Linhas em `auth.users`** — emails e senhas dos 3 demos continuam
+  válidos; ninguém precisa recriar usuário.
+- **Schema, RLS, policies, triggers** — definidos em
+  [`schema.sql`](./schema.sql), nunca tocados pelo seed.
+- **Dados de qualquer outro usuário** — todos os DELETEs/INSERTs do
+  seed filtram pelos 3 emails demo via `auth.users`. Outras contas no
+  mesmo projeto não são afetadas.
+
+### O que o reset apaga
+
+Apenas, e só, para os 3 emails demo:
+- todas as linhas em `medications` (cascata derruba schedules e logs);
+- todos os logs do app (incluindo "marcar como tomado" persistidos).
 
 ### Sobre os logs do dia
 
@@ -109,11 +168,28 @@ passado e a tela fica natural.
 
 ### Reset rápido durante uma sessão de teste
 
-Para desfazer todos os "marcar como tomado" feitos pelo app sem recriar
-medicamentos e horários (UUIDs continuam estáveis), rode
-[`reset_logs.sql`](./reset_logs.sql). Ele só atualiza
-`medication_logs` e mostra ao final uma contagem por perfil para
-conferência. Use o `seed.sql` quando quiser um reset total.
+Para desfazer apenas os "marcar como tomado" feitos pelo app **durante
+a sessão atual** (logs de hoje), sem recriar medicamentos, horários
+nem o histórico de 6 dias, rode [`reset_logs.sql`](./reset_logs.sql).
+Escopo deliberadamente menor que o `seed.sql`: mantém os UUIDs
+estáveis e é mais rápido, mas **não restaura o histórico semanal**.
+Para banca, prefira sempre o `seed.sql`.
+
+### Por que não existe botão de reset no app
+
+Decisão consciente. Um botão visível para participante:
+
+- exige rodar com privilégios elevados (apagar dados de outro usuário
+  não cabe na RLS atual), o que empurraria `service_role` para o
+  cliente — risco de segurança inaceitável mesmo em escopo TCC;
+- pode ser tocado por engano durante uma sessão de SUS e invalidar a
+  coleta de dados em andamento;
+- não traz benefício para o avaliador participante, que entra com a
+  persona já no cenário inicial.
+
+Se em algum momento for útil, a alternativa idiomática é uma Edge
+Function autenticada por chave própria (não `service_role`) — fora do
+escopo deste TCC.
 
 ---
 

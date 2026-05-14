@@ -1,16 +1,27 @@
 -- ============================================================
--- TCC Takere — Reset dos logs de tomada (volta ao estado do seed)
+-- TCC Takere — Reset rápido dos logs de HOJE
 -- ============================================================
--- Use quando quiser desfazer todos os "marcar como tomado" feitos
--- pelo app nos perfis demo, sem recriar medications/schedules
--- (mantém os UUIDs estáveis — bom durante uma sessão de teste).
+-- Use só quando quiser rebobinar os "marcar como tomado" feitos no
+-- app durante uma sessão de teste, SEM recriar medications/
+-- schedules (assim os UUIDs continuam estáveis entre sessões).
+--
+-- ESCOPO LIMITADO — leia antes de usar:
+--   - Este script só atualiza os logs do dia atual (D=0).
+--   - NÃO restaura o histórico dos últimos 6 dias (D-1..D-6) que o
+--     seed.sql preenche para alimentar a HistoryScreen semanal. Se
+--     algo no histórico passado foi modificado (raro — o app só
+--     edita logs de hoje), use seed.sql em vez deste script.
+--   - NÃO recria medicamentos nem horários — usa o que já existe.
+--   - NÃO toca em auth.users.
+--
+-- Quando preferir seed.sql (reset completo):
+--   - Antes da banca / sessão de avaliação heurística / SUS.
+--   - Quando quiser garantir que o cenário canônico (incluindo o
+--     histórico semanal) está exatamente como projetado.
+--   - Quando este script falhar por mudança de schema.
 --
 -- Aplicar em Supabase Studio → SQL Editor → cole tudo → Run.
 -- Idempotente: pode rodar quantas vezes quiser.
---
--- Alternativa "nuclear": rodar `seed.sql`, que recria
--- medications/schedules/logs do zero. Use este script quando quiser
--- só rebobinar os logs do dia atual.
 --
 -- Os valores aqui têm que bater com `seed.sql`. Se mudar lá
 -- (medicamento, horário, fuso), atualize aqui também.
