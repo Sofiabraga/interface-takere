@@ -69,14 +69,17 @@ substitui por "Maria Silva", "Carlos Oliveira", "Ana Souza" e preenche
 
 ## 3. Popular ou resetar o cenário demo
 
-O mesmo arquivo — [`seed.sql`](./seed.sql) — é usado para a
-configuração inicial **e** para o reset antes de cada banca ou
-sessão de avaliação. Não há dois scripts; é só um.
+O mesmo arquivo — [`reset_demo.sql`](./reset_demo.sql) — é usado para
+a configuração inicial **e** para o reset antes de cada banca ou
+sessão de avaliação. Não há dois scripts; é só um. (Era `seed.sql`
+até a C21; renomeado porque o nome anterior subentendia "popular
+pela primeira vez" e escondia o uso principal — resetar entre
+sessões.)
 
 ### Aplicar pela primeira vez
 
 1. **SQL Editor → New query**.
-2. Cole o conteúdo de [`seed.sql`](./seed.sql).
+2. Cole o conteúdo de [`reset_demo.sql`](./reset_demo.sql).
 3. **Run**.
 4. Confira o `SELECT` final: 3 linhas (uma por usuário demo) com os
    números esperados (ver "Conferência" abaixo).
@@ -98,14 +101,14 @@ O seed:
 
 ### 🎯 Antes da banca ou sessão de avaliação
 
-> **Rode o `seed.sql` no mesmo dia da sessão.** Os logs usam
+> **Rode o `reset_demo.sql` no mesmo dia da sessão.** Os logs usam
 > `current_date`, então a data é fixada na hora do reset; rodar na
 > véspera deixa o cenário "envelhecido" um dia.
 
 Checklist:
 
 1. Abra o Supabase Studio do projeto de demonstração.
-2. **SQL Editor → New query** → cole `seed.sql` → **Run**.
+2. **SQL Editor → New query** → cole `reset_demo.sql` → **Run**.
 3. Aguarde a mensagem `Success. No rows returned` no console, exceto
    pelo `SELECT` final que retorna 3 linhas (Maria, Carlos, Ana).
 4. **Confira que os números batem** com a tabela abaixo. Se não
@@ -118,7 +121,7 @@ Checklist:
 
 ### Conferência esperada
 
-Linha por usuário no `SELECT` final do `seed.sql`:
+Linha por usuário no `SELECT` final do `reset_demo.sql`:
 
 | email | meds | sched | logs | taken | late | pending |
 |---|---|---|---|---|---|---|
@@ -171,9 +174,9 @@ passado e a tela fica natural.
 Para desfazer apenas os "marcar como tomado" feitos pelo app **durante
 a sessão atual** (logs de hoje), sem recriar medicamentos, horários
 nem o histórico de 6 dias, rode [`reset_logs.sql`](./reset_logs.sql).
-Escopo deliberadamente menor que o `seed.sql`: mantém os UUIDs
+Escopo deliberadamente menor que o `reset_demo.sql`: mantém os UUIDs
 estáveis e é mais rápido, mas **não restaura o histórico semanal**.
-Para banca, prefira sempre o `seed.sql`.
+Para banca, prefira sempre o `reset_demo.sql`.
 
 ### Por que não existe botão de reset no app
 
@@ -256,8 +259,9 @@ Coloque ambos em um `.env` local (veja `.env.example` na raiz do repo).
 
 ## 7. Se algo der errado
 
-- **`Usuários demo ausentes: …`** ao seedar: a verificação inicial do
-  `seed.sql` falhou. Volte ao passo 2 e crie os emails que faltaram.
+- **`Usuários demo ausentes: …`** ao rodar o reset: a verificação
+  inicial do `reset_demo.sql` falhou. Volte ao passo 2 e crie os
+  emails que faltaram.
 - **`new row violates row-level security policy`** ao seedar: o seed
   está rodando como usuário autenticado em vez de `postgres`. Confirme
   que não há `set local role authenticated` ativo da sessão anterior do

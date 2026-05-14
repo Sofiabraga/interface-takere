@@ -8,13 +8,13 @@
 -- ESCOPO LIMITADO — leia antes de usar:
 --   - Este script só atualiza os logs do dia atual (D=0).
 --   - NÃO restaura o histórico dos últimos 6 dias (D-1..D-6) que o
---     seed.sql preenche para alimentar a HistoryScreen semanal. Se
+--     reset_demo.sql preenche para alimentar a HistoryScreen semanal. Se
 --     algo no histórico passado foi modificado (raro — o app só
---     edita logs de hoje), use seed.sql em vez deste script.
+--     edita logs de hoje), use reset_demo.sql em vez deste script.
 --   - NÃO recria medicamentos nem horários — usa o que já existe.
 --   - NÃO toca em auth.users.
 --
--- Quando preferir seed.sql (reset completo):
+-- Quando preferir reset_demo.sql (reset completo):
 --   - Antes da banca / sessão de avaliação heurística / SUS.
 --   - Quando quiser garantir que o cenário canônico (incluindo o
 --     histórico semanal) está exatamente como projetado.
@@ -23,7 +23,7 @@
 -- Aplicar em Supabase Studio → SQL Editor → cole tudo → Run.
 -- Idempotente: pode rodar quantas vezes quiser.
 --
--- Os valores aqui têm que bater com `seed.sql`. Se mudar lá
+-- Os valores aqui têm que bater com `reset_demo.sql`. Se mudar lá
 -- (medicamento, horário, fuso), atualize aqui também.
 -- ============================================================
 
@@ -43,7 +43,7 @@ begin
   where e not in (select email from auth.users);
 
   if v_missing is not null then
-    raise exception 'Usuários demo ausentes: %. Rode seed.sql antes deste script.', v_missing;
+    raise exception 'Usuários demo ausentes: %. Rode reset_demo.sql antes deste script.', v_missing;
   end if;
 end $$;
 

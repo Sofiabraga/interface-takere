@@ -1,9 +1,10 @@
 -- ============================================================
--- TCC Takere — Seed / Reset do cenário demo
+-- TCC Takere — Reset do cenário demo
 -- ============================================================
--- Este é o ÚNICO script necessário tanto para a configuração
--- inicial do banco quanto para resetar o cenário demo antes de
--- cada banca, avaliação heurística ou sessão de teste com SUS.
+-- Script único para configuração inicial do banco E reset do
+-- cenário demo antes de cada banca, avaliação heurística ou
+-- sessão de teste com SUS. (Renomeado a partir de seed.sql na
+-- C21 — o nome anterior era ambíguo entre "popular" e "resetar".)
 --
 -- Quando rodar:
 --   - Configuração inicial do projeto Supabase.

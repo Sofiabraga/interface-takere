@@ -98,8 +98,9 @@ hoje + histórico semanal) é restaurado por um único script SQL no
 Supabase:
 
 - Antes de cada banca, sessão de avaliação ou demo: rode
-  [`supabase/seed.sql`](./supabase/seed.sql) no SQL Editor do Supabase
-  Studio **no mesmo dia da sessão** (os logs usam `current_date`).
+  [`supabase/reset_demo.sql`](./supabase/reset_demo.sql) no SQL Editor
+  do Supabase Studio **no mesmo dia da sessão** (os logs usam
+  `current_date`).
 - Reset rápido durante uma sessão (só logs de hoje, sem mexer no
   histórico):
   [`supabase/reset_logs.sql`](./supabase/reset_logs.sql).
@@ -140,10 +141,10 @@ src/
   mocks/          Dados imutáveis em runtime (clonados ao inicializar).
 
 supabase/
-  schema.sql      Tabelas, RLS, triggers, policies.
-  seed.sql        Cenário inicial dos 3 demos + reset antes da banca.
-  reset_logs.sql  Reset rápido só dos logs de hoje (uso pontual).
-  README.md       Passo a passo do backend.
+  schema.sql       Tabelas, RLS, triggers, policies.
+  reset_demo.sql   Cenário inicial dos 3 demos + reset antes da banca.
+  reset_logs.sql   Reset rápido só dos logs de hoje (uso pontual).
+  README.md        Passo a passo do backend.
 ```
 
 Regras arquiteturais detalhadas (o que cada camada pode/não pode

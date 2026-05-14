@@ -1331,3 +1331,85 @@ A escolha do termo “registrados” em vez de “consumidos” é importante pa
 - A barra de progresso é apenas reforço visual; a informação principal precisa continuar sendo textual.
 - Percentuais podem causar sensação de julgamento se a linguagem não for cuidadosamente mantida neutra.
 - A funcionalidade ainda depende da consistência dos logs gerados no seed ou no backend.
+
+---
+
+### Interação C21
+
+**Categoria:**  
+Backend / Supabase / Reset de cenário demo / Documentação / Segurança
+
+**Tela ou funcionalidade:**  
+Processo de reset do cenário demo para avaliação, banca e testes.
+
+**Objetivo do prompt:**  
+Criar um processo claro, seguro e reproduzível para resetar os dados fictícios dos três usuários demo antes de sessões de avaliação, banca ou testes locais, sem adicionar botão de reset no app e sem expor `service_role`.
+
+**Prompt enviado:**  
+Foi solicitado que Claude revisasse ou criasse um script SQL de reset para os dados demo, preservando os usuários Auth e recriando medicamentos, horários e logs das personas Maria, Carlos e Ana. Também foi pedido que o processo fosse documentado no `supabase/README.md` e, se necessário, no `README.md` principal, deixando claro quando rodar o reset, o que ele apaga, o que preserva e quais cuidados de segurança devem ser observados.
+
+**Resumo da resposta do Claude:**  
+Claude renomeou `supabase/seed.sql` para `supabase/reset_demo.sql` usando `git mv`, preservando o histórico do arquivo. A decisão foi tomada porque o script não serve apenas para popular inicialmente o banco, mas também para resetar o cenário antes de avaliações e demonstrações. Com isso, `reset_demo.sql` passa a ser a fonte única de verdade para recriar o cenário canônico dos três usuários fictícios.
+
+O script `reset_demo.sql` verifica se os três usuários demo existem em `auth.users`, falhando com mensagem clara caso algum esteja ausente. Em seguida, remove os dados das três contas demo por meio de `DELETE` filtrado pelos e-mails fictícios, preservando os usuários de autenticação. Como as relações usam cascade, medicamentos, agendamentos e logs são recriados do zero. O script também atualiza os profiles das personas e recria tanto o cenário do dia atual quanto o histórico semanal dos últimos dias.
+
+Claude também atualizou `supabase/reset_logs.sql`, `supabase/README.md` e o `README.md` principal para apontarem para `reset_demo.sql`, documentando o processo de reset antes da banca ou sessão de avaliação.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+O reset precisa ser executado manualmente no Supabase Studio pelo pesquisador/desenvolvedor. Isso é intencional por segurança, mas exige disciplina antes de cada banca ou sessão de avaliação. Se o app estiver aberto durante o reset, pode ser necessário fazer logout/login ou recarregar os dados para que o estado do app reflita o banco atualizado.
+
+**Evidência:**  
+Arquivos criados/renomeados:
+- `supabase/reset_demo.sql` — renomeado a partir de `supabase/seed.sql`.
+
+Arquivos modificados:
+- `supabase/reset_logs.sql`
+- `supabase/README.md`
+- `README.md`
+
+Arquivos React Native:
+- Nenhum arquivo de código do app foi alterado.
+
+**Checklist de validação:**  
+- Abrir o Supabase Studio do projeto de demonstração.
+- Acessar `SQL Editor → New query`.
+- Colar e rodar `supabase/reset_demo.sql`.
+- Confirmar que o script não retorna erro.
+- Verificar se o `SELECT` final retorna 3 linhas, uma para cada usuário demo.
+- Confirmar os cenários esperados:
+  - Maria: 4 medicamentos, 28 logs semanais, cenário variado.
+  - Carlos: 2 medicamentos, 14 logs semanais, poucos registros.
+  - Ana: 3 medicamentos, 21 logs semanais, quase tudo registrado.
+- Fazer logout/login no app com Maria e verificar a Home.
+- Fazer logout/login com Carlos e verificar a Home.
+- Fazer logout/login com Ana e verificar a Home.
+- Abrir a HistoryScreen e confirmar que o resumo semanal aparece preenchido.
+- Marcar um medicamento como tomado e confirmar que a persistência funciona.
+- Rodar `reset_demo.sql` novamente e confirmar que o cenário volta ao estado inicial.
+- Confirmar que o processo é idempotente.
+- Rodar `npx tsc --noEmit` e confirmar que o app segue compilando.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque prepara o ambiente para avaliação controlada. Como o app agora possui persistência real no Supabase, era necessário garantir que os dados pudessem retornar a um estado previsível antes de cada sessão de teste ou banca. Isso ajuda a reduzir variações entre participantes e facilita a comparação dos resultados de usabilidade.
+
+A decisão de não colocar reset dentro do app também é importante. O reset é uma operação administrativa, não uma funcionalidade do usuário final. Mantê-lo fora da interface evita risco de apagamento acidental durante a coleta de dados e impede a necessidade de usar chaves privilegiadas no cliente mobile.
+
+Do ponto de vista metodológico, o `reset_demo.sql` ajuda a padronizar o cenário experimental, garantindo que Maria, Carlos e Ana sempre partam dos mesmos estados fictícios de medicamentos, registros e histórico semanal.
+
+**Possíveis riscos ou limitações:**  
+- O reset é manual e depende do pesquisador executá-lo antes da avaliação.
+- Se o reset for executado enquanto o app está aberto, o estado em memória pode ficar desatualizado até logout/login ou reload.
+- O script deve ser usado apenas no projeto de demonstração, nunca em ambiente com dados reais.
+- O reset apaga registros persistidos anteriormente para os três usuários demo.
+- O reset preserva os usuários Auth, mas depende de eles existirem previamente.
+- O processo ainda não possui interface administrativa própria, por escolha de segurança e simplicidade.
+- Um botão de reset dev-only poderia ser útil no futuro, mas exigiria cuidado com flags de ambiente e uma operação segura fora do app público.
