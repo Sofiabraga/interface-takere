@@ -1413,3 +1413,75 @@ Do ponto de vista metodológico, o `reset_demo.sql` ajuda a padronizar o cenári
 - O reset preserva os usuários Auth, mas depende de eles existirem previamente.
 - O processo ainda não possui interface administrativa própria, por escolha de segurança e simplicidade.
 - Um botão de reset dev-only poderia ser útil no futuro, mas exigiria cuidado com flags de ambiente e uma operação segura fora do app público.
+
+---
+
+### Interação C22
+
+**Categoria:**  
+Design visual / Polimento estético / UI/UX / Refatoração visual pontual
+
+**Tela ou funcionalidade:**  
+Ajustes visuais no card de próximo medicamento e nos botões principais/secundários.
+
+**Objetivo do prompt:**  
+Avaliar possibilidades de melhoria estética na interface e aplicar ajustes visuais pequenos, seguros e consistentes, sem alterar regras de negócio, backend, navegação ou funcionalidades principais.
+
+**Prompt enviado:**  
+Foi solicitado que Claude analisasse mudanças estéticas possíveis para deixar a interface mais bonita, leve e consistente, considerando a importância de uma boa avaliação de IHC, heurísticas de Nielsen e SUS.
+
+**Resumo da resposta do Claude:**  
+Claude modificou o layout do `NextMedicationCard` para deixá-lo mais compacto e visualmente leve. O chip “Próximo medicamento” foi substituído por um texto discreto em maiúsculas com espaçamento entre letras, alinhado ao `StatusBadge`. O horário passou a aparecer à esquerda como um marcador visual forte, enquanto nome e dose ficam empilhados à direita. As instruções permanecem abaixo quando existem, e o botão principal continua no rodapé do card.
+
+Também foram ajustados os estilos do `PrimaryButton`. Os botões passaram a ter cantos mais arredondados, com raio maior, criando uma aparência mais suave e menos institucional. O botão primário ganhou sombra sutil para reforçar hierarquia visual, enquanto botões secundários ficaram planos e um pouco menores, reduzindo o peso visual da seção de ações secundárias.
+
+Segundo Claude, a altura aproximada do card de próximo medicamento foi reduzida, tornando a HomeScreen mais leve e menos verticalmente pesada. As mudanças preservaram tipografia legível, áreas de toque adequadas, ausência de ícones/animações e comunicação de status por texto e cor.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+4
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+As mudanças são positivas do ponto de vista estético, mas precisam ser validadas visualmente em dispositivos pequenos. O layout horizontal do card pode exigir ajustes se nomes de medicamentos ou doses forem mais longos. A sombra do botão primário também deve ser verificada no Android, pois `elevation` pode produzir aparência mais forte do que o esperado. Além disso, como o `PrimaryButton` é usado em várias telas, a alteração afeta Home, detalhe e login, exigindo checagem visual em todo o app.
+
+**Evidência:**  
+Arquivos modificados:
+- `src/components/NextMedicationCard.tsx`
+- `src/components/PrimaryButton.tsx`
+
+**Checklist de validação local:**  
+- Rodar `npx tsc --noEmit` e confirmar que não há erros.
+- Abrir a HomeScreen da Maria.
+- Verificar se o card “Próximo medicamento” ficou visualmente mais leve.
+- Confirmar se o horário aparece claramente à esquerda.
+- Confirmar se nome, dose e instruções continuam legíveis.
+- Confirmar se o `StatusBadge` continua visível e bem alinhado.
+- Testar com medicamento pendente, atrasado e tomado.
+- Verificar o estado “Tudo em dia”.
+- Conferir se o botão “Marcar como tomado” continua dominante.
+- Conferir se os botões secundários continuam fáceis de tocar.
+- Testar navegação para agenda, histórico e logout.
+- Verificar a `MedicationDetailScreen`, pois ela também usa `PrimaryButton`.
+- Verificar a `LoginScreen`, pois o botão principal também recebeu novo estilo.
+- Testar em tela pequena, como iPhone SE ou Android compacto.
+- Verificar se VoiceOver/TalkBack continuam lendo os rótulos corretamente.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque mostra o uso de Claude em uma etapa de refinamento estético e não apenas de geração funcional. A mudança buscou melhorar a percepção visual da interface, reduzir peso vertical da HomeScreen e reforçar hierarquia entre ação principal e ações secundárias.
+
+Do ponto de vista das heurísticas de Nielsen, os ajustes preservam consistência e padrões, reconhecimento em vez de memorização e estética minimalista. O card continua comunicando claramente o próximo medicamento, mantendo status textual e ação principal visível.
+
+Do ponto de vista do SUS, a melhoria estética pode contribuir para maior percepção de qualidade, facilidade de uso e confiança, especialmente porque a interface passa a parecer menos rudimentar e mais próxima de um produto real.
+
+**Possíveis riscos ou limitações:**  
+- O novo layout horizontal pode sofrer com textos longos.
+- A sombra do botão pode variar entre iOS e Android.
+- O botão secundário menor ainda respeita área de toque, mas deve ser testado com usuários.
+- O texto em maiúsculas no card deve ser validado quanto à legibilidade.
+- Como a alteração no `PrimaryButton` é global, pode haver efeitos visuais inesperados em outras telas.
+- As mudanças são estéticas e não substituem uma revisão heurística formal ou teste com participantes.

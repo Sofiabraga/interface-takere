@@ -8,6 +8,13 @@ interface PrimaryButtonProps {
   disabled?: boolean;
 }
 
+// Botão padrão do app. Cantos suavemente arredondados (radius.xl) dão
+// um ar mais convidativo sem perder a forma reconhecível de botão. O
+// primary ainda usa altura 56 (mínimo para ação principal segundo a
+// diretriz do projeto); o secondary cai para 48, ainda confortável
+// acima do mínimo de 44 e visualmente mais leve para ações de
+// navegação. Sombra sutil só no primary cria hierarquia: a ação
+// principal "flutua" enquanto as secundárias ficam discretas.
 export function PrimaryButton({
   label,
   onPress,
@@ -26,6 +33,7 @@ export function PrimaryButton({
       style={({ pressed }) => [
         styles.base,
         isSecondary ? styles.secondary : styles.primary,
+        !isSecondary && !disabled && !pressed && styles.primaryShadow,
         pressed && !disabled && (isSecondary ? styles.secondaryPressed : styles.primaryPressed),
         disabled && styles.disabled,
       ]}
@@ -45,20 +53,28 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 56,
     width: '100%',
     paddingHorizontal: spacing.lg,
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primary: {
+    minHeight: 56,
     backgroundColor: colors.primary,
+  },
+  primaryShadow: {
+    shadowColor: colors.primaryDark,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   primaryPressed: {
     backgroundColor: colors.primaryDark,
   },
   secondary: {
+    minHeight: 48,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.primary,
