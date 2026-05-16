@@ -1,8 +1,10 @@
 # Backend Supabase — TCC Takere
 
-Este diretório guarda os **artefatos de banco** do TCC. Não é código de
-aplicação; o app React Native ainda não conhece o Supabase nesta etapa
-(C15). A integração no app começa na C16 (auth) e C17 (leitura).
+Este diretório guarda os **artefatos de banco** do TCC: schema, RLS,
+scripts de seed e de reset usados em sessões de avaliação. O app já
+consome o Supabase para autenticação e persistência — esses scripts são
+operados pelo pesquisador no SQL Editor do Supabase Studio, nunca pelo
+app.
 
 > **Escopo acadêmico.** Todos os usuários, medicamentos, doses e horários
 > abaixo são **fictícios**. Este backend não emite prescrição, não

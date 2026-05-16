@@ -61,6 +61,9 @@ end $$;
 --     foi rodado num dia anterior.
 --   - status e taken_at são atualizados juntos para satisfazer
 --     `medication_logs_taken_consistency`.
+-- IMPORTANTE: filtra para os logs de HOJE (D=0). Sem isto, a UPDATE
+-- alcança os 7 dias do histórico semanal e colapsa todas as datas em
+-- "hoje" — destruindo o cenário que a HistoryScreen exibe.
 update public.medication_logs ml
 set
   status = case m.name
@@ -92,7 +95,9 @@ where ml.schedule_id = s.id
     'maria.demo@takere.test',
     'carlos.demo@takere.test',
     'ana.demo@takere.test'
-  );
+  )
+  and ml.scheduled_for >= (current_date::timestamp at time zone 'America/Sao_Paulo')
+  and ml.scheduled_for <  ((current_date + 1)::timestamp at time zone 'America/Sao_Paulo');
 
 -- ------------------------------------------------------------
 -- 2. Conferência rápida (opcional — comente se quiser silêncio)
@@ -115,5 +120,7 @@ where u.email in (
   'carlos.demo@takere.test',
   'ana.demo@takere.test'
 )
+  and ml.scheduled_for >= (current_date::timestamp at time zone 'America/Sao_Paulo')
+  and ml.scheduled_for <  ((current_date + 1)::timestamp at time zone 'America/Sao_Paulo')
 group by u.email
 order by u.email;

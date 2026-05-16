@@ -79,23 +79,27 @@ export function HomeScreen() {
 
       <MedicationSummaryCard summary={dashboard.summary} />
 
-      <SectionTitle>Medicamentos de hoje</SectionTitle>
-      <Card>
-        {dashboard.items.map((item, index) => (
-          <MedicationListItem
-            key={item.id}
-            item={item}
-            showDivider={index > 0}
-            onPress={(tapped) =>
-              navigation.navigate(Routes.MedicationDetail, {
-                logId: tapped.id,
-              })
-            }
-          />
-        ))}
-      </Card>
+      {dashboard.items.length > 0 ? (
+        <>
+          <SectionTitle>Medicamentos de hoje</SectionTitle>
+          <Card>
+            {dashboard.items.map((item, index) => (
+              <MedicationListItem
+                key={item.id}
+                item={item}
+                showDivider={index > 0}
+                onPress={(tapped) =>
+                  navigation.navigate(Routes.MedicationDetail, {
+                    logId: tapped.id,
+                  })
+                }
+              />
+            ))}
+          </Card>
 
-      <StatusLegend />
+          <StatusLegend />
+        </>
+      ) : null}
 
       <SectionTitle>Mais opções</SectionTitle>
       <PrimaryButton
@@ -104,7 +108,7 @@ export function HomeScreen() {
         onPress={handleViewAll}
       />
       <PrimaryButton
-        label="Ver histórico de hoje"
+        label="Ver histórico da semana"
         variant="secondary"
         onPress={handleViewHistory}
       />

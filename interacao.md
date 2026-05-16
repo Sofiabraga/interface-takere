@@ -1485,3 +1485,115 @@ Do ponto de vista do SUS, a melhoria estética pode contribuir para maior percep
 - O texto em maiúsculas no card deve ser validado quanto à legibilidade.
 - Como a alteração no `PrimaryButton` é global, pode haver efeitos visuais inesperados em outras telas.
 - As mudanças são estéticas e não substituem uma revisão heurística formal ou teste com participantes.
+
+---
+
+### Interação C23
+
+**Categoria:**  
+QA / Correção de bugs / Backend / Documentação / Revisão de UI/UX
+
+**Tela ou funcionalidade:**  
+QA final do app com backend, autenticação, persistência, histórico semanal e reset de cenário demo.
+
+**Objetivo do prompt:**  
+Realizar uma rodada conservadora de QA final no app integrado ao Supabase, procurando bugs funcionais, regressões, inconsistências de estado, problemas de navegação, problemas de loading/erro, problemas de persistência, textos ambíguos, acoplamentos indevidos e riscos para a avaliação com participantes.
+
+**Prompt enviado:**  
+Foi solicitado que Claude revisasse o projeto de forma ampla, considerando autenticação, backend, HomeScreen, MedicationListScreen, MedicationDetailScreen, HistoryScreen, loading/error states, acessibilidade, arquitetura e documentação. O pedido enfatizou que a etapa deveria ser conservadora, corrigindo apenas problemas pequenos, claros e seguros, e listando problemas maiores como recomendações futuras.
+
+**Resumo da resposta do Claude:**  
+Claude realizou uma revisão geral do app e confirmou que o typecheck continuava passando. Foram modificados três arquivos: `HomeScreen.tsx`, `supabase/README.md` e `supabase/reset_logs.sql`.
+
+Na `HomeScreen`, o rótulo “Ver histórico de hoje” foi alterado para “Ver histórico da semana”, pois a tela de histórico passou a apresentar uma visão semanal. Também foi ajustada a seção “Medicamentos de hoje” para não renderizar um card vazio quando não houver itens, evitando uma experiência confusa em cenários sem medicamentos.
+
+No `supabase/reset_logs.sql`, Claude identificou um problema mais sério: o script atualizava todos os logs dos últimos 7 dias, reescrevendo `scheduled_for` para o dia atual e, consequentemente, colapsando o histórico semanal em um único dia. O script foi corrigido para filtrar apenas os logs do dia atual, preservando o histórico semanal. O `SELECT` de conferência também foi ajustado para refletir corretamente esse escopo.
+
+No `supabase/README.md`, foi corrigida uma frase desatualizada que ainda dizia que o app não conhecia o Supabase desde a etapa C15. A documentação passou a refletir o estado atual do projeto, com autenticação e persistência reais já implementadas.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A etapa corrigiu problemas pontuais, mas não implementou melhorias maiores identificadas durante a revisão, como adicionar contadores aos filtros, revisar textos com tom encorajador, melhorar tipagem das queries aninhadas do Supabase ou adicionar testes automatizados. Essas questões foram consideradas fora do escopo conservador desta interação.
+
+**Evidência:**  
+Arquivos modificados:
+- `src/screens/HomeScreen.tsx`
+- `supabase/README.md`
+- `supabase/reset_logs.sql`
+
+Arquivos criados:
+- Nenhum.
+
+Dependências:
+- Nenhuma dependência nova foi adicionada.
+
+Typecheck:
+- `npm run typecheck` passa sem erros.
+
+**Problemas corrigidos:**  
+- O botão da Home que levava para o histórico dizia “Ver histórico de hoje”, embora a tela mostre histórico semanal.
+- A seção “Medicamentos de hoje” podia renderizar um card vazio em cenários sem medicamentos.
+- `supabase/reset_logs.sql` atualizava logs de vários dias, podendo destruir a visão semanal do histórico.
+- `supabase/README.md` continha uma descrição desatualizada do estado da integração com Supabase.
+
+**Problemas encontrados, mas não corrigidos:**  
+- Os filtros da MedicationListScreen ainda não mostram contadores, apesar de isso ter sido considerado uma possível melhoria de UX.
+- Textos como “Continue assim!” podem soar levemente julgadores ou encorajadores demais, devendo ser avaliados na revisão heurística.
+- `getTodayDashboard` usa `new Date()` durante renderização, o que pode não atualizar automaticamente se o app atravessar a meia-noite aberto.
+- Algumas queries do Supabase usam relações aninhadas para RLS sem tipagem totalmente explícita.
+- A HistoryScreen não mostra `FeedbackBanner` se o usuário navegar para ela logo após marcar/desfazer em outra tela.
+- Ainda não há testes automatizados.
+
+**Checklist de QA final:**  
+- Rodar `npm install --legacy-peer-deps`, se necessário.
+- Conferir `.env` com `EXPO_PUBLIC_SUPABASE_URL` sem `/rest/v1`.
+- Conferir `.env` com `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+- Rodar `reset_demo.sql` no mesmo dia da avaliação.
+- Confirmar que o `SELECT` final do reset mostra os logs esperados.
+- Rodar `npm run typecheck`.
+- Login com Maria funciona.
+- Logout funciona.
+- Login com Carlos mostra apenas dados de Carlos.
+- Login com Ana mostra apenas dados de Ana.
+- Fechar e reabrir o app restaura sessão.
+- Erro de login mostra mensagem amigável.
+- Sem internet, o app mostra erro compreensível.
+- Home da Maria mostra Losartana como próximo medicamento atrasado.
+- Resumo do dia mostra 1 tomado, 2 pendentes e 1 atrasado.
+- “Marcar como tomado” mostra banner verde e permite desfazer.
+- “Ver agenda completa de hoje” abre a lista.
+- “Ver histórico da semana” abre o histórico.
+- MedicationListScreen filtra corretamente por status.
+- MedicationDetailScreen abre o medicamento correto.
+- HistoryScreen mostra resumo semanal e lista de registros.
+- Marcar/desfazer atualiza o histórico semanal.
+- LoadingState aparece em cold start.
+- ErrorState aparece em falha de rede/carregamento.
+- VoiceOver/TalkBack lê os principais elementos.
+- Status aparecem com texto e cor.
+- `service_role` não aparece no código do app.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque representa uma etapa de controle de qualidade antes da avaliação heurística. Em vez de adicionar novas funcionalidades, Claude foi usado para procurar regressões e inconsistências no sistema já integrado ao backend.
+
+A correção do `reset_logs.sql` é especialmente importante do ponto de vista metodológico, pois o histórico semanal precisa permanecer consistente para a avaliação. Se o script colapsasse todos os logs para o dia atual, os dados apresentados aos participantes ficariam incorretos, prejudicando a validade da avaliação.
+
+Do ponto de vista de IHC, a alteração de “Ver histórico de hoje” para “Ver histórico da semana” melhora a correspondência entre linguagem da interface e comportamento real do sistema. A remoção de card vazio também evita uma situação visual ambígua que poderia ser interpretada como erro ou falha de carregamento.
+
+**Possíveis riscos ou limitações:**  
+- Ainda não há testes automatizados.
+- O reset precisa ser executado corretamente no dia da banca ou avaliação.
+- O app depende de conexão estável para login e persistência.
+- A experiência offline é limitada a rollback e mensagens de erro.
+- Algumas melhorias de UX ainda podem surgir na revisão heurística.
+- Os filtros sem contadores podem ser apontados como oportunidade de melhoria.
+- A linguagem de alguns estados positivos pode precisar ser ajustada para manter tom neutro.
+- A ausência de realtime significa que alterações em outro dispositivo não aparecem automaticamente.

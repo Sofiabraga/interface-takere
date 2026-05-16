@@ -38,19 +38,25 @@ export interface MedicationDetailView {
   status: MedicationStatus;
 }
 
-export interface HistoryEntryView {
+// Log do dia exposto pela HistoryScreen. Difere de TodayMedicationView
+// por incluir takenAtTime quando o medicamento foi registrado — assim
+// a lista do dia mostra tanto os tomados (com horário registrado)
+// quanto os não-tomados (apenas o horário previsto + badge de status),
+// mantendo coerência com o "X de Y registrados" exibido logo acima.
+export interface DayLogView {
   id: string;
   medication: Medication;
   scheduledTime: string;
-  takenAtTime: string;
-  takenAtIso: string;
+  takenAtTime?: string;
   status: MedicationStatus;
 }
 
 // Resumo de um único dia da semana. `percent` é null quando não há
 // medicamentos previstos naquele dia — a UI traduz isso para "Sem
 // medicamentos previstos" em vez de exibir 0%, que pareceria um
-// resultado negativo.
+// resultado negativo. `logs` traz todos os medicamentos do dia
+// (qualquer status), ordenados por horário previsto crescente, para
+// alimentar a lista paginada por dia.
 export interface WeeklyDaySummaryView {
   isoDate: string;        // 'YYYY-MM-DD' em horário local do dispositivo
   weekdayLabel: string;   // 'Hoje' | 'Ontem' | 'Segunda' ... 'Domingo'
@@ -58,6 +64,7 @@ export interface WeeklyDaySummaryView {
   planned: number;
   registered: number;
   percent: number | null;
+  logs: DayLogView[];
 }
 
 export interface WeeklySummaryView {
@@ -71,10 +78,6 @@ export interface WeeklyHistoryView {
   summary: WeeklySummaryView;
   // Mais recente primeiro: days[0] = hoje, days[6] = 6 dias atrás.
   days: WeeklyDaySummaryView[];
-  // Apenas logs com status 'taken' + takenAt, dentro da janela de 7
-  // dias, ordenados do mais recente para o mais antigo.
-  entries: HistoryEntryView[];
-  total: number;
 }
 
 const WEEKDAY_NAMES_PT = [
@@ -160,12 +163,11 @@ function joinLog(
   };
 }
 
-function buildHistoryEntry(
+function buildDayLog(
   log: MedicationLog,
   schedules: MedicationSchedule[],
   medications: Medication[],
-): HistoryEntryView | null {
-  if (!log.takenAt) return null;
+): DayLogView | null {
   const schedule = findSchedule(log.scheduleId, schedules);
   if (!schedule) return null;
   const medication = findMedication(schedule.medicationId, medications);
@@ -174,8 +176,7 @@ function buildHistoryEntry(
     id: log.id,
     medication,
     scheduledTime: formatScheduledTime(log.scheduledFor),
-    takenAtTime: formatScheduledTime(log.takenAt),
-    takenAtIso: log.takenAt,
+    takenAtTime: log.takenAt ? formatScheduledTime(log.takenAt) : undefined,
     status: log.status,
   };
 }
@@ -309,6 +310,10 @@ export const MedicationService = {
       const registered = dayLogs.filter(
         (log) => log.status === 'taken' && log.takenAt,
       ).length;
+      const logs = dayLogs
+        .map((log) => buildDayLog(log, data.schedules, data.medications))
+        .filter((view): view is DayLogView => view !== null)
+        .sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
       days.push({
         isoDate: formatLocalIsoDate(dayDate),
         weekdayLabel: weekdayLabel(dayDate, i),
@@ -316,6 +321,7 @@ export const MedicationService = {
         planned,
         registered,
         percent: computePercent(registered, planned),
+        logs,
       });
     }
 
@@ -331,22 +337,10 @@ export const MedicationService = {
       percent: computePercent(totalRegistered, totalPlanned),
     };
 
-    const entries: HistoryEntryView[] = patientLogs
-      .filter((log) => {
-        if (log.status !== 'taken' || !log.takenAt) return false;
-        const scheduled = new Date(log.scheduledFor);
-        return scheduled >= windowStart && scheduled < tomorrowStart;
-      })
-      .map((log) => buildHistoryEntry(log, data.schedules, data.medications))
-      .filter((entry): entry is HistoryEntryView => entry !== null)
-      .sort((a, b) => b.takenAtIso.localeCompare(a.takenAtIso));
-
     return {
       patientId,
       summary,
       days,
-      entries,
-      total: entries.length,
     };
   },
 };
