@@ -1,4 +1,5 @@
 import {
+  ImageSourcePropType,
   Modal,
   Pressable,
   ScrollView,
@@ -24,6 +25,7 @@ interface ProfileMenuProps {
   age: number | null;
   totalMedications: number;
   monthlyAdherence: MonthlyAdherence | null;
+  photoSource?: ImageSourcePropType;
   onClose: () => void;
   onSignOut: () => void;
 }
@@ -44,6 +46,7 @@ export function ProfileMenu({
   age,
   totalMedications,
   monthlyAdherence,
+  photoSource,
   onClose,
   onSignOut,
 }: ProfileMenuProps) {
@@ -72,7 +75,11 @@ export function ProfileMenu({
               <View style={styles.handle} />
 
               <View style={styles.identityRow}>
-                <ProfileAvatar name={name} size="lg" />
+                <ProfileAvatar
+                  name={name}
+                  size="lg"
+                  photoSource={photoSource}
+                />
                 <View style={styles.identityText}>
                   <Text
                     accessibilityRole="header"

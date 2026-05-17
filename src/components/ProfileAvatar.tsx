@@ -1,9 +1,20 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Image,
+  ImageSourcePropType,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { colors, radius, typography } from '../theme';
 
 interface ProfileAvatarProps {
   name: string;
   size?: 'sm' | 'lg';
+  // Quando presente, a foto é renderizada no lugar das iniciais.
+  // Aceita require() local ({ uri } funciona também, mas no escopo
+  // atual só usamos asset local — sem rede, sem URL pessoal real).
+  photoSource?: ImageSourcePropType;
   onPress?: () => void;
   accessibilityLabel?: string;
 }
@@ -32,6 +43,7 @@ export function getInitials(name: string): string {
 export function ProfileAvatar({
   name,
   size = 'sm',
+  photoSource,
   onPress,
   accessibilityLabel,
 }: ProfileAvatarProps) {
@@ -39,7 +51,14 @@ export function ProfileAvatar({
   const dimensionStyle = size === 'lg' ? styles.lg : styles.sm;
   const textStyle = size === 'lg' ? styles.textLg : styles.textSm;
 
-  const content = (
+  const content = photoSource ? (
+    <Image
+      source={photoSource}
+      style={styles.image}
+      resizeMode="cover"
+      accessibilityIgnoresInvertColors
+    />
+  ) : (
     <Text
       style={textStyle}
       accessibilityElementsHidden
@@ -78,6 +97,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: colors.primaryLight,
+    // overflow: 'hidden' garante que a Image interna fique clipada no
+    // círculo do avatar quando photoSource está presente.
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   sm: {
     width: 52,

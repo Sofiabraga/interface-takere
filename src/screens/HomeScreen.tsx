@@ -11,6 +11,7 @@ import { ProfileMenu } from '../components/ProfileMenu';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionTitle } from '../components/SectionTitle';
 import { StatusLegend } from '../components/StatusLegend';
+import { getProfilePhoto } from '../assets/profilePhotos';
 import { useMedicationContext } from '../contexts/MedicationProvider';
 import { useAuth } from '../hooks/useAuth';
 import { useMedicationHistory } from '../hooks/useMedicationHistory';
@@ -38,6 +39,7 @@ export function HomeScreen() {
   // o ?? '' é defensivo e evita um crash em razões pontuais.
   const fullName = patient?.name ?? '';
   const firstName = fullName.split(' ')[0] ?? '';
+  const photoSource = getProfilePhoto(user?.email);
 
   function handleViewAll() {
     navigation.navigate(Routes.MedicationList);
@@ -92,6 +94,7 @@ export function HomeScreen() {
         {fullName ? (
           <ProfileAvatar
             name={fullName}
+            photoSource={photoSource}
             onPress={handleOpenProfile}
             accessibilityLabel={`Perfil de ${fullName}. Toque para abrir o menu.`}
           />
@@ -156,6 +159,7 @@ export function HomeScreen() {
         age={patient?.age ?? null}
         totalMedications={medications.length}
         monthlyAdherence={monthly?.summary ?? null}
+        photoSource={photoSource}
         onClose={handleCloseProfile}
         onSignOut={handleSignOutPress}
       />
