@@ -16,7 +16,8 @@
 --   2. Apaga medications/schedules/logs das 3 contas demo (cascata).
 --   3. Atualiza profiles (display_name, age, tech_familiarity).
 --   4. Recria medicamentos, horários e logs de "hoje" + histórico
---      dos últimos 6 dias para alimentar a HistoryScreen semanal.
+--      dos últimos 29 dias para alimentar a HistoryScreen mensal
+--      (resumo dos últimos 30 dias = hoje + 29 anteriores).
 --   5. Emite SELECT final de conferência por usuário.
 --
 -- O que este script NÃO toca:
@@ -266,22 +267,26 @@ begin
 end $$;
 
 -- ------------------------------------------------------------
--- 6. Logs históricos: últimos 6 dias para os 3 usuários
+-- 6. Logs históricos: últimos 29 dias para os 3 usuários
 -- ------------------------------------------------------------
--- Alimenta a HistoryScreen com uma semana variada. Os logs de "hoje"
--- inseridos acima cobrem o cenário usado pela Home; estes inserts
--- adicionais cobrem D-1 .. D-6 e nunca tocam D=0, então não há risco
--- de quebrar Home/List/Detail.
+-- Alimenta a HistoryScreen com um mês inteiro de registros (hoje +
+-- 29 dias anteriores = 30 dias). Os logs de "hoje" inseridos acima
+-- cobrem o cenário usado pela Home; estes inserts adicionais cobrem
+-- D-1 .. D-29 e nunca tocam D=0, então não há risco de quebrar
+-- Home/List/Detail.
 --
--- Os padrões por usuário foram desenhados para que o resumo semanal
--- mostre percentuais distintos:
---   - Maria: semana variada (mix de tomados e não tomados);
---   - Carlos: poucos registros (a maioria das doses fica 'late');
---   - Ana: registros mais completos (quase tudo 'taken').
+-- Os padrões usam aritmética modular sobre v_day_offset para ficarem
+-- determinísticos e fáceis de verificar — diferente da versão de 7
+-- dias, que listava os "dias pulados" à mão (inviável em 29 dias).
+-- Cada usuário tem um perfil distinto para o resumo mensal:
+--   - Maria: variada (~75% registrados, mistura confortável de
+--     tomados e não tomados);
+--   - Carlos: irregular (~17%, a maioria fica 'late');
+--   - Ana: muito regular (~93%, quase tudo 'taken').
 --
--- Status 'late' é usado para representar "previsto mas não
--- registrado" no passado — consistente com a check constraint do
--- schema (taken_at is null quando status <> 'taken').
+-- Status 'late' representa "previsto mas não registrado" no passado
+-- — consistente com a check constraint do schema (taken_at is null
+-- quando status <> 'taken').
 do $$
 declare
   v_profile_id uuid;
@@ -290,9 +295,11 @@ declare
   v_scheduled  timestamptz;
   v_take_it    boolean;
 begin
-  -- Maria: padrão variado.
-  -- Pula a Sinvastatina (22h) em D-4 e D-2 e a Losartana (08h) em D-3
-  -- e D-6 para que dias diferentes produzam percentuais diferentes.
+  -- Maria: pula doses sempre que v_day_offset é múltiplo de 4.
+  -- Resulta em 7 pulos por schedule (offsets 4,8,12,16,20,24,28) ×
+  -- 4 schedules = 28 logs 'late' históricos. Os 88 restantes ficam
+  -- 'taken'. Com hoje (1 taken, 1 late, 2 pending) o total mensal
+  -- bate 89 taken / 29 late / 2 pending = 120 logs → ~74%.
   select id into v_profile_id from auth.users where email = 'maria.demo@takere.test';
   for v_sched in
     select s.id as sched_id, s.time_of_day as t
@@ -300,16 +307,11 @@ begin
     join public.medications m on m.id = s.medication_id
     where m.profile_id = v_profile_id
   loop
-    for v_day_offset in 1..6 loop
+    for v_day_offset in 1..29 loop
       v_scheduled :=
         ((current_date - v_day_offset) + v_sched.t)
           at time zone 'America/Sao_Paulo';
-      v_take_it := case
-        when v_day_offset in (4, 2) and v_sched.t = time '22:00' then false
-        when v_day_offset in (3, 6) and v_sched.t = time '08:00' then false
-        when v_day_offset = 5 and v_sched.t = time '12:00' then false
-        else true
-      end;
+      v_take_it := (v_day_offset % 4) <> 0;
 
       if v_take_it then
         insert into public.medication_logs (schedule_id, scheduled_for, status, taken_at)
@@ -326,9 +328,11 @@ begin
     end loop;
   end loop;
 
-  -- Carlos: poucos registros. Marca como 'taken' só em alguns dias,
-  -- e nem todas as doses do dia, para refletir uma semana com
-  -- percentual mais baixo.
+  -- Carlos: marca como 'taken' SÓ quando v_day_offset é múltiplo de
+  -- 5 — registros muito esparsos. Resulta em 5 takes por schedule
+  -- (offsets 5,10,15,20,25) × 2 schedules = 10 takes históricos +
+  -- 48 'late' históricos. Com hoje (2 pending) o total mensal bate
+  -- 10 taken / 48 late / 2 pending = 60 logs → ~17%.
   select id into v_profile_id from auth.users where email = 'carlos.demo@takere.test';
   for v_sched in
     select s.id as sched_id, s.time_of_day as t
@@ -336,17 +340,11 @@ begin
     join public.medications m on m.id = s.medication_id
     where m.profile_id = v_profile_id
   loop
-    for v_day_offset in 1..6 loop
+    for v_day_offset in 1..29 loop
       v_scheduled :=
         ((current_date - v_day_offset) + v_sched.t)
           at time zone 'America/Sao_Paulo';
-      v_take_it := case
-        -- Apenas a dose matinal em alguns dias específicos.
-        when v_sched.t = time '08:00' and v_day_offset in (1, 3, 5) then true
-        -- Dose noturna só em D-1.
-        when v_sched.t = time '20:00' and v_day_offset = 1 then true
-        else false
-      end;
+      v_take_it := (v_day_offset % 5) = 0;
 
       if v_take_it then
         insert into public.medication_logs (schedule_id, scheduled_for, status, taken_at)
@@ -363,9 +361,10 @@ begin
     end loop;
   end loop;
 
-  -- Ana: registros mais completos. Praticamente todas as doses
-  -- marcadas como 'taken'; deixa uma única falha em D-4 para que
-  -- a semana não fique 100% reta.
+  -- Ana: pula doses só quando v_day_offset é múltiplo de 10. Resulta
+  -- em 2 pulos por schedule (offsets 10, 20) × 3 schedules = 6 logs
+  -- 'late'. Os 81 restantes ficam 'taken'. Com hoje (3 taken) o
+  -- total mensal bate 84 taken / 6 late / 0 pending = 90 logs → ~93%.
   select id into v_profile_id from auth.users where email = 'ana.demo@takere.test';
   for v_sched in
     select s.id as sched_id, s.time_of_day as t
@@ -373,11 +372,11 @@ begin
     join public.medications m on m.id = s.medication_id
     where m.profile_id = v_profile_id
   loop
-    for v_day_offset in 1..6 loop
+    for v_day_offset in 1..29 loop
       v_scheduled :=
         ((current_date - v_day_offset) + v_sched.t)
           at time zone 'America/Sao_Paulo';
-      v_take_it := not (v_day_offset = 4 and v_sched.t = time '09:00');
+      v_take_it := (v_day_offset % 10) <> 0;
 
       if v_take_it then
         insert into public.medication_logs (schedule_id, scheduled_for, status, taken_at)
@@ -401,9 +400,14 @@ end $$;
 -- Use o resultado para validar visualmente o cenário restaurado.
 -- Esperado em qualquer dia (porque o seed é determinístico):
 --
---   ana.demo@takere.test    | 3 meds | 3 sched | 21 logs | 20 taken | 1 late | 0 pending
---   carlos.demo@takere.test | 2 meds | 2 sched | 14 logs |  4 taken | 8 late | 2 pending
---   maria.demo@takere.test  | 4 meds | 4 sched | 28 logs | 20 taken | 6 late | 2 pending
+--   ana.demo@takere.test    | 3 meds | 3 sched |  90 logs | 84 taken |  6 late | 0 pending
+--   carlos.demo@takere.test | 2 meds | 2 sched |  60 logs | 10 taken | 48 late | 2 pending
+--   maria.demo@takere.test  | 4 meds | 4 sched | 120 logs | 89 taken | 29 late | 2 pending
+--
+-- Resumo mensal correspondente (HistoryScreen):
+--   Ana    → 93% (84/90)
+--   Carlos → 17% (10/60)
+--   Maria  → 74% (89/120)
 --
 -- Se aparecer algo diferente, NÃO entre na banca com esse estado —
 -- rode o script de novo e confira; provavelmente o script foi

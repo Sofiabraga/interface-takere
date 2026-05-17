@@ -7,17 +7,18 @@
 --
 -- ESCOPO LIMITADO — leia antes de usar:
 --   - Este script só atualiza os logs do dia atual (D=0).
---   - NÃO restaura o histórico dos últimos 6 dias (D-1..D-6) que o
---     reset_demo.sql preenche para alimentar a HistoryScreen semanal. Se
---     algo no histórico passado foi modificado (raro — o app só
---     edita logs de hoje), use reset_demo.sql em vez deste script.
+--   - NÃO restaura o histórico dos últimos 29 dias (D-1..D-29) que o
+--     reset_demo.sql preenche para alimentar o resumo mensal da
+--     HistoryScreen. Se algo no histórico passado foi modificado (raro
+--     — o app só edita logs de hoje), use reset_demo.sql em vez
+--     deste script.
 --   - NÃO recria medicamentos nem horários — usa o que já existe.
 --   - NÃO toca em auth.users.
 --
 -- Quando preferir reset_demo.sql (reset completo):
 --   - Antes da banca / sessão de avaliação heurística / SUS.
 --   - Quando quiser garantir que o cenário canônico (incluindo o
---     histórico semanal) está exatamente como projetado.
+--     histórico mensal) está exatamente como projetado.
 --   - Quando este script falhar por mudança de schema.
 --
 -- Aplicar em Supabase Studio → SQL Editor → cole tudo → Run.

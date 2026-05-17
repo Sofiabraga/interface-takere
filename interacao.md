@@ -1511,6 +1511,8 @@ No `supabase/reset_logs.sql`, Claude identificou um problema mais sério: o scri
 
 No `supabase/README.md`, foi corrigida uma frase desatualizada que ainda dizia que o app não conhecia o Supabase desde a etapa C15. A documentação passou a refletir o estado atual do projeto, com autenticação e persistência reais já implementadas.
 
+Além das correções sugeridas por Claude, foi realizado um ajuste manual na `HistoryScreen`: a lista de medicamentos registrados estava ficando muito longa, prejudicando a leitura e aumentando a carga visual da tela. Para tornar o histórico semanal mais usável, foi adicionado um seletor por dia (`<>`), permitindo navegar entre os dias e visualizar apenas os registros correspondentes ao dia selecionado. Essa alteração melhora a organização da informação e reduz a densidade visual da tela, mantendo o histórico útil sem sobrecarregar o usuário.
+
 **Decisão tomada:**  
 Aceito com pequenas alterações.
 
@@ -1521,13 +1523,18 @@ Aceito com pequenas alterações.
 Baixo
 
 **Problema ou limitação:**  
-A etapa corrigiu problemas pontuais, mas não implementou melhorias maiores identificadas durante a revisão, como adicionar contadores aos filtros, revisar textos com tom encorajador, melhorar tipagem das queries aninhadas do Supabase ou adicionar testes automatizados. Essas questões foram consideradas fora do escopo conservador desta interação.
+A etapa corrigiu problemas pontuais e também exigiu um pequeno ajuste manual de UX na HistoryScreen, pois a lista completa de medicamentos registrados ficava longa demais. Esse ajuste foi considerado de baixo retrabalho, pois não alterou a arquitetura nem o funcionamento principal do histórico, apenas melhorou a forma de apresentação dos registros por meio de seleção por dia.
+
+Ainda permaneceram melhorias maiores fora do escopo desta interação, como adicionar contadores aos filtros, revisar textos com tom encorajador, melhorar tipagem das queries aninhadas do Supabase ou adicionar testes automatizados.
 
 **Evidência:**  
-Arquivos modificados:
+Arquivos modificados por Claude:
 - `src/screens/HomeScreen.tsx`
 - `supabase/README.md`
 - `supabase/reset_logs.sql`
+
+Ajuste manual posterior:
+- `HistoryScreen`, com adição de seletor por dia (`<>`) para reduzir o tamanho da lista de medicamentos registrados e melhorar a navegação pelo histórico.
 
 Arquivos criados:
 - Nenhum.
@@ -1543,6 +1550,7 @@ Typecheck:
 - A seção “Medicamentos de hoje” podia renderizar um card vazio em cenários sem medicamentos.
 - `supabase/reset_logs.sql` atualizava logs de vários dias, podendo destruir a visão semanal do histórico.
 - `supabase/README.md` continha uma descrição desatualizada do estado da integração com Supabase.
+- A lista de medicamentos registrados no histórico semanal ficava longa demais; foi adicionada navegação por dia para reduzir a densidade visual.
 
 **Problemas encontrados, mas não corrigidos:**  
 - Os filtros da MedicationListScreen ainda não mostram contadores, apesar de isso ter sido considerado uma possível melhoria de UX.
@@ -1573,7 +1581,8 @@ Typecheck:
 - “Ver histórico da semana” abre o histórico.
 - MedicationListScreen filtra corretamente por status.
 - MedicationDetailScreen abre o medicamento correto.
-- HistoryScreen mostra resumo semanal e lista de registros.
+- HistoryScreen mostra resumo semanal e registros organizados por dia.
+- O seletor por dia do histórico permite navegar entre os dias sem exibir uma lista excessivamente longa.
 - Marcar/desfazer atualiza o histórico semanal.
 - LoadingState aparece em cold start.
 - ErrorState aparece em falha de rede/carregamento.
@@ -1588,6 +1597,8 @@ A correção do `reset_logs.sql` é especialmente importante do ponto de vista m
 
 Do ponto de vista de IHC, a alteração de “Ver histórico de hoje” para “Ver histórico da semana” melhora a correspondência entre linguagem da interface e comportamento real do sistema. A remoção de card vazio também evita uma situação visual ambígua que poderia ser interpretada como erro ou falha de carregamento.
 
+O ajuste manual no histórico, com navegação por dia, também é relevante para o TCC porque mostra uma adaptação humana feita após observar uma limitação prática da solução gerada. A lista de registros estava longa demais e poderia prejudicar a legibilidade; a navegação por dia reduz a carga cognitiva e melhora a organização da informação sem alterar o escopo funcional do app.
+
 **Possíveis riscos ou limitações:**  
 - Ainda não há testes automatizados.
 - O reset precisa ser executado corretamente no dia da banca ou avaliação.
@@ -1597,3 +1608,247 @@ Do ponto de vista de IHC, a alteração de “Ver histórico de hoje” para “
 - Os filtros sem contadores podem ser apontados como oportunidade de melhoria.
 - A linguagem de alguns estados positivos pode precisar ser ajustada para manter tom neutro.
 - A ausência de realtime significa que alterações em outro dispositivo não aparecem automaticamente.
+- A navegação por dia melhora o histórico, mas ainda deve ser validada para confirmar se os usuários entendem facilmente o uso dos controles `<>`.
+
+---
+
+### Interação C24
+
+**Categoria:**  
+Design de UI/UX / Histórico mensal / Visualização de dados simples / Supabase / Serviço de domínio / Ajuste manual
+
+**Tela ou funcionalidade:**  
+Aprimoramento da HistoryScreen com resumo mensal dos últimos 30 dias.
+
+**Objetivo do prompt:**  
+Adicionar uma visão mensal bonita, limpa e fácil de entender à tela de histórico, mostrando o percentual de medicamentos registrados nos últimos 30 dias, sem transformar a funcionalidade em avaliação clínica, adesão terapêutica ou recomendação médica.
+
+**Prompt enviado:**  
+Foi solicitado que Claude aprimorasse a `HistoryScreen` para apresentar um histórico mensal com resumo dos últimos 30 dias, percentual geral, quantidade de medicamentos registrados e previstos, além de uma visualização mensal simples e acessível. Também foi pedido que a solução priorizasse estética, clareza, acessibilidade, baixo esforço cognitivo e compatibilidade com Nielsen e SUS, sem adicionar bibliotecas de gráficos ou dependências novas.
+
+**Resumo da resposta do Claude:**  
+Claude criou os componentes `MonthlySummaryCard` e `MonthlyWeekProgressItem`. O primeiro exibe o percentual mensal em destaque, junto com uma frase explicativa e a quantidade de medicamentos registrados e previstos. O segundo apresenta o progresso por blocos semanais, com rótulo do período, faixa de datas, quantidade registrada, percentual e barra horizontal de reforço visual.
+
+No `MedicationService`, foram adicionados novos tipos de view-model (`MonthlySummaryView`, `MonthlyWeekSummaryView` e `MonthlyHistoryView`) e uma função pura `getMonthlyHistory()`, responsável por calcular o histórico dos últimos 30 dias a partir de `logs`, `schedules` e `medications`, sem acessar Supabase, mocks ou UI.
+
+O hook `useMedicationHistory` foi atualizado para expor tanto os dados mensais quanto os semanais. A `HistoryScreen` foi reestruturada para apresentar resumo do mês, progresso por semanas e navegador por dia. O `SupabaseMedicationRepository` passou a buscar logs dos últimos 30 dias, em vez de apenas 7 dias.
+
+Também foram removidos os componentes antigos `WeeklySummaryCard` e `WeeklyDayProgressItem`, que não eram mais utilizados. O `reset_demo.sql` foi atualizado para gerar logs históricos de 29 dias anteriores, totalizando 30 dias, com padrões determinísticos para Maria, Carlos e Ana. A documentação em `supabase/README.md` e `README.md` também foi atualizada para refletir o histórico mensal e reforçar que os percentuais representam registros feitos no app, não comprovação clínica de consumo.
+
+Após a implementação inicial, foi necessário realizar ajustes manuais. Alguns nomes de atributos gerados por Claude não estavam alinhados aos tipos/objetos reais usados no projeto, exigindo correção para que o código ficasse consistente com os view-models e componentes. Além disso, o problema de lista longa no histórico voltou a aparecer: a seção de medicamentos registrados ficava extensa demais, gerando novamente uma experiência próxima de “scroll infinito”. Para resolver isso, foi necessário ajustar novamente a apresentação dos medicamentos da semana/dia, mantendo a navegação por dia e evitando que a tela exibisse uma lista excessivamente longa de registros.
+
+**Decisão tomada:**  
+Aceito com alterações manuais relevantes.
+
+**Utilidade percebida:**  
+4
+
+**Retrabalho:**  
+Médio
+
+**Problema ou limitação:**  
+A funcionalidade gerada por Claude foi útil e trouxe uma melhoria importante para o histórico, mas exigiu correções manuais. Os nomes de alguns atributos precisaram ser ajustados para refletir corretamente a estrutura real do código. Além disso, a HistoryScreen voltou a apresentar excesso de registros em uma lista longa, problema que já havia aparecido no histórico semanal. Foi necessário corrigir novamente a organização da lista para evitar uma tela muito extensa e difícil de escanear.
+
+A visualização mensal ficou mais rica e visualmente mais interessante, mas aumentou a complexidade do histórico e do reset demo. A opção por agrupar os 30 dias em 4 blocos semanais reduz a densidade visual, mas perde granularidade completa de todos os dias do mês na visualização principal. O navegador por dia continua sendo importante para manter a lista de registros controlada.
+
+**Evidência:**  
+Arquivos criados:
+- `src/components/MonthlySummaryCard.tsx`
+- `src/components/MonthlyWeekProgressItem.tsx`
+
+Arquivos modificados:
+- `src/services/MedicationService.ts`
+- `src/hooks/useMedicationHistory.ts`
+- `src/repositories/SupabaseMedicationRepository.ts`
+- `src/screens/HistoryScreen.tsx`
+- `src/components/DayNavigator.tsx`
+- `src/components/MonthlyWeekProgressItem.tsx`
+- `supabase/reset_demo.sql`
+- `supabase/reset_logs.sql`
+- `supabase/README.md`
+- `README.md`
+
+Arquivos removidos:
+- `src/components/WeeklySummaryCard.tsx`
+- `src/components/WeeklyDayProgressItem.tsx`
+
+Ajustes manuais posteriores:
+- Correção de nomes de atributos para alinhar a implementação aos tipos reais do projeto.
+- Reorganização da lista de medicamentos registrados para evitar uma experiência de lista longa/scroll excessivo.
+- Manutenção do seletor/navegador por dia para controlar a quantidade de registros exibidos na HistoryScreen.
+
+**Modelagem do histórico mensal:**  
+A janela considerada é composta pelo dia atual e os 29 dias anteriores, totalizando 30 dias. O `MedicationService` devolve um view-model mensal com:
+- resumo geral do mês;
+- total de medicamentos previstos;
+- total de medicamentos registrados;
+- percentual geral;
+- 4 blocos semanais;
+- lista de registros.
+
+A divisão escolhida foi:
+- Esta semana: D-0 até D-6;
+- Semana passada: D-7 até D-13;
+- Há 2 semanas: D-14 até D-20;
+- Há 3 semanas: D-21 até D-29.
+
+O último bloco contém 9 dias para fechar exatamente 30 dias sem criar uma quinta semana parcial. A faixa de datas exibida em cada bloco ajuda a deixar essa assimetria compreensível para o usuário.
+
+**Cálculo dos percentuais:**  
+O percentual é calculado como:
+
+```txt
+medicamentos registrados / medicamentos previstos * 100
+
+---
+
+### Interação C25
+
+**Categoria:**  
+Design de UI/UX / Perfil de usuário / Menu de conta / Navegação / Refinamento visual
+
+**Tela ou funcionalidade:**  
+Perfil simples da pessoa logada e menu de conta na HomeScreen.
+
+**Objetivo do prompt:**  
+Adicionar um perfil simples da pessoa logada, com aparência de app real, permitindo identificar claramente qual usuário demo está em uso e mantendo o logout acessível, sem criar funcionalidades complexas de configuração, edição de conta ou comunicação clínica.
+
+**Prompt enviado:**  
+Foi solicitado que Claude adicionasse um perfil compacto à HomeScreen, usando dados já disponíveis em `useAuth` ou `useCurrentPatient`, sem buscar dados diretamente do Supabase na tela. O pedido incluía avatar com iniciais, nome da pessoa, indicação de perfil fictício/de demonstração e botão de logout. Também foi explicitado que não deveriam ser implementadas funcionalidades como alterar senha, editar perfil, falar com médico ou configurações clínicas.
+
+**Resumo da resposta do Claude:**  
+Claude criou o componente `ProfileAvatar`, um avatar circular com iniciais da pessoa logada, com variantes pequena e grande. A variante pequena é usada no topo da HomeScreen, e a variante grande aparece dentro do menu de perfil. O helper `getInitials` foi exportado para gerar iniciais como `MS`, `CO` e `AS`.
+
+Também foi criado o componente `ProfileMenu`, implementado como um modal estilo bottom-sheet. Esse menu mostra o avatar grande, o nome completo da pessoa, o rótulo “Perfil de demonstração”, um texto auxiliar e os botões “Sair da conta” e “Fechar”. O menu pode ser fechado pelo botão explícito ou pelo backdrop.
+
+A `HomeScreen` foi modificada para substituir o `AppHeader` por um cabeçalho em linha, com saudação à esquerda e avatar à direita. O botão “Sair” foi removido da seção “Mais opções” e movido para dentro do `ProfileMenu`, mantendo a confirmação por `Alert` antes de realizar logout. A seção “Mais opções” passou a conter apenas ações de navegação, como “Ver agenda completa de hoje” e “Ver histórico”.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A solução melhora a identificação do usuário logado e a organização da HomeScreen, mas ainda é um perfil simples. Não há edição de dados, alteração de senha, personalização, foto real ou configurações avançadas, por decisão consciente de escopo. A implementação deve ser validada visualmente em telas pequenas para garantir que o cabeçalho em linha não prejudique a saudação nem a hierarquia da Home.
+
+**Evidência:**  
+Arquivos criados:
+- `src/components/ProfileAvatar.tsx`
+- `src/components/ProfileMenu.tsx`
+
+Arquivos modificados:
+- `src/screens/HomeScreen.tsx`
+
+**Checklist de validação local:**  
+- Fazer login como Maria e confirmar que o avatar mostra `MS`.
+- Fazer login como Carlos e confirmar que o avatar mostra `CO`.
+- Fazer login como Ana e confirmar que o avatar mostra `AS`.
+- Tocar no avatar e confirmar que o bottom-sheet abre.
+- Verificar se o menu mostra avatar grande, nome completo e “Perfil de demonstração”.
+- Tocar fora do menu e confirmar que ele fecha.
+- Tocar em “Fechar” e confirmar que o menu fecha.
+- Tocar em “Sair da conta” e confirmar que o `Alert` aparece.
+- Tocar em “Cancelar” e confirmar que o usuário permanece logado.
+- Confirmar “Sair” e verificar se o app volta para a LoginScreen.
+- Confirmar que “Sair” não aparece mais em “Mais opções”.
+- Confirmar que “Mais opções” contém apenas ações navegacionais.
+- Confirmar que o `NextMedicationCard` continua sendo o destaque da Home.
+- Confirmar que “Marcar como tomado” e “Desfazer” continuam funcionando.
+- Navegar para agenda, detalhe e histórico e voltar para a Home.
+- Rodar `npx tsc --noEmit`.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque melhora a aparência de produto da interface sem expandir o escopo funcional do app. O perfil simples ajuda a reforçar a identidade do usuário logado, o que é especialmente útil no contexto do TCC, em que há três perfis fictícios diferentes para demonstração e avaliação.
+
+Do ponto de vista de IHC, a solução contribui para visibilidade do estado do sistema, pois deixa claro quem está usando o app. Também melhora consistência e organização ao separar ações de navegação das ações de conta. O logout passa a ficar em um lugar mais esperado, dentro do menu de perfil, em vez de misturado às ações de “Mais opções”.
+
+Do ponto de vista do SUS, a mudança pode contribuir para a percepção de integração, confiança e familiaridade, pois o app passa a seguir um padrão comum de aplicativos móveis: avatar/perfil no topo e menu de conta com opção de sair.
+
+A decisão de não implementar configurações avançadas também é importante para o TCC. Ela mantém o foco no objetivo principal: organização e registro de medicamentos. Funcionalidades como editar perfil, alterar senha ou falar com médico poderiam diluir o foco da avaliação e introduzir expectativas clínicas ou de suporte que não fazem parte do escopo do trabalho.
+
+**Possíveis riscos ou limitações:**  
+- O perfil é apenas informativo, sem edição de dados.
+- Não há foto real, apenas iniciais, por escolha de privacidade e simplicidade.
+- O menu de perfil aparece apenas na HomeScreen, não em todas as telas internas.
+- O bottom-sheet deve ser testado com leitor de tela para garantir fechamento e foco adequados.
+- O cabeçalho customizado da Home substituiu o `AppHeader`, o que deve ser observado para manter consistência visual.
+- A opção “Sair da conta” exige confirmação, mas ainda pode ser considerada menos visível por usuários que esperavam encontrá-la em “Mais opções”.
+
+---
+
+### Interação C25.1
+
+**Categoria:**  
+Ideação / Priorização de escopo / UI/UX / Avaliação de melhorias
+
+**Tela ou funcionalidade:**  
+Melhorias possíveis para o ProfileMenu e perfil da pessoa logada.
+
+**Objetivo do prompt:**  
+Avaliar quais melhorias adicionais fariam sentido para o menu de perfil, considerando estética, usabilidade, heurísticas de Nielsen, SUS, escopo do TCC e pouco tempo restante de desenvolvimento.
+
+**Prompt enviado:**  
+Foi solicitado que Claude sugerisse melhorias possíveis para o perfil da pessoa logada, sem implementar automaticamente. O objetivo era identificar ideias que deixassem o perfil mais útil, confiável e com aparência de app real, mas sem criar funcionalidades avançadas de conta, configurações ou comunicação clínica.
+
+**Resumo da resposta do Claude:**  
+Claude sugeriu melhorias organizadas por categoria. Entre as ideias de baixo esforço, propôs exibir o e-mail da conta da pessoa, idade e data de criação/uso do app. Como melhorias de maior valor para SUS, sugeriu mostrar o total de medicamentos acompanhados, um resumo dos registros dos últimos 30 dias e o total de doses já registradas. Também sugeriu um bloco “Sobre esta demonstração”, explicando que os dados são fictícios e usados para avaliação acadêmica, além de um rodapé com contexto acadêmico, como “Takere · TCC em Ciência da Computação · UFRGS · 2026”.
+
+Claude também listou ideias que não recomenda implementar, como streaks, troféus, botões desabilitados de “Editar perfil” ou “Alterar senha”, tela cheia de configurações, alteração de tema e funcionalidades como “falar com médico”. A justificativa foi evitar aumento de escopo, evitar aparência de funcionalidade incompleta e não transformar o app em canal clínico.
+
+Após análise, foi decidido que as sugestões mais pertinentes seriam:
+- exibir o e-mail da conta;
+- exibir o total de medicamentos acompanhados;
+- incluir um bloco “Sobre esta demonstração”;
+- adicionar um rodapé acadêmico discreto;
+- considerar um resumo simples dos registros do mês apenas se for fácil reaproveitar os dados já existentes.
+
+Também foi decidido não implementar, neste momento:
+- idade no menu;
+- data de criação da conta;
+- total acumulado de doses registradas;
+- botão separado “Trocar de perfil de demonstração”;
+- alteração de senha;
+- edição de perfil;
+- falar com médico;
+- configurações avançadas.
+
+**Decisão tomada:**  
+Usado como base para priorização de escopo.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Nenhum
+
+**Problema ou limitação:**  
+A interação não gerou código diretamente, mas ajudou a decidir quais melhorias valem ser implementadas posteriormente. Algumas sugestões poderiam melhorar a percepção de completude do app, mas também aumentariam o risco de poluição visual ou desvio de escopo se implementadas em excesso.
+
+**Evidência:**  
+Não houve alteração de arquivos nesta interação.
+
+Sugestões consideradas para uma possível próxima etapa:
+- adicionar e-mail da conta no `ProfileMenu`;
+- adicionar total de medicamentos acompanhados;
+- adicionar bloco “Sobre esta demonstração”;
+- adicionar rodapé acadêmico discreto;
+- opcionalmente adicionar resumo simples dos registros do mês, se o esforço for baixo.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque mostra o uso de Claude não apenas para gerar código, mas também para apoiar decisões de escopo e priorização de funcionalidades. A resposta ajudou a separar melhorias úteis para usabilidade e transparência de funcionalidades que poderiam gerar complexidade desnecessária.
+
+Do ponto de vista de IHC, as melhorias priorizadas reforçam visibilidade do estado do sistema, ajuda/documentação, correspondência com o mundo real e confiança. O bloco “Sobre esta demonstração” é especialmente importante para deixar claro que os dados são fictícios e que o app tem finalidade acadêmica.
+
+Do ponto de vista do SUS, mostrar a conta logada, o total de medicamentos acompanhados e informações simples sobre o mês pode aumentar a percepção de integração e confiança. Porém, o excesso de métricas ou funcionalidades incompletas poderia ter o efeito oposto, tornando o sistema mais complexo.
+
+**Possíveis riscos ou limitações:**  
+- Adicionar muitas informações ao ProfileMenu pode deixá-lo visualmente carregado.
+- Métricas como percentual mensal podem duplicar conteúdo da HistoryScreen.
+- Idade no menu pode parecer informação pessoal desnecessária.
+- Botões desabilitados de configuração poderiam parecer funcionalidades quebradas.
+- Funcionalidades como “falar com médico” poderiam deslocar o escopo do app para comunicação clínica, o que não faz parte do TCC.
+- Streaks/troféus poderiam infantilizar a experiência ou gerar sensação de cobrança.

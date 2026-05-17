@@ -92,14 +92,20 @@ O seed:
 - apaga medications/schedules/logs anteriores das 3 contas demo
   (idempotente — pode rodar várias vezes);
 - atualiza os 3 `profiles` com `display_name`, `age` e `tech_familiarity`;
-- cria os medicamentos, horários e logs de **hoje** + dos **últimos 6
-  dias** (alimenta a HistoryScreen semanal):
+- cria os medicamentos, horários e logs de **hoje** + dos **últimos 29
+  dias** (totalizando 30 dias para alimentar o resumo mensal da
+  HistoryScreen):
   - **Maria** — 4 medicamentos (Omeprazol tomado, Losartana atrasada,
-    Metformina pendente, Sinvastatina pendente); histórico variado.
+    Metformina pendente, Sinvastatina pendente); ~74% registrados no
+    mês.
   - **Carlos** — 2 medicamentos pendentes (Atorvastatina, Captopril);
-    poucos registros na semana.
+    ~17% registrados no mês (cenário irregular).
   - **Ana** — 3 medicamentos todos tomados (Vitamina D, Ferro quelato,
-    Multivitamínico); histórico quase completo.
+    Multivitamínico); ~93% registrados no mês (cenário regular).
+
+> Os percentuais são **contabilidade dos registros** que o usuário fez
+> no app, não comprovação de consumo, nem indicador clínico de adesão
+> terapêutica.
 
 ### 🎯 Antes da banca ou sessão de avaliação
 
@@ -127,12 +133,20 @@ Linha por usuário no `SELECT` final do `reset_demo.sql`:
 
 | email | meds | sched | logs | taken | late | pending |
 |---|---|---|---|---|---|---|
-| `ana.demo@takere.test`    | 3 | 3 | 21 | 20 | 1 | 0 |
-| `carlos.demo@takere.test` | 2 | 2 | 14 |  4 | 8 | 2 |
-| `maria.demo@takere.test`  | 4 | 4 | 28 | 20 | 6 | 2 |
+| `ana.demo@takere.test`    | 3 | 3 |  90 | 84 |  6 | 0 |
+| `carlos.demo@takere.test` | 2 | 2 |  60 | 10 | 48 | 2 |
+| `maria.demo@takere.test`  | 4 | 4 | 120 | 89 | 29 | 2 |
 
-(28 = 4 × 7 dias; 21 = 3 × 7; 14 = 2 × 7. Se o total estiver diferente
-disso, o seed foi interrompido.)
+(120 = 4 × 30 dias; 90 = 3 × 30; 60 = 2 × 30. Se o total estiver
+diferente disso, o seed foi interrompido.)
+
+Resumo mensal esperado na HistoryScreen após o reset:
+
+| Persona | Percentual do mês | Texto exibido |
+|---|---|---|
+| Ana    | 93% | "84 de 90 medicamentos registrados." |
+| Carlos | 17% | "10 de 60 medicamentos registrados." |
+| Maria  | 74% | "89 de 120 medicamentos registrados." |
 
 ### O que o reset preserva
 
@@ -175,10 +189,11 @@ passado e a tela fica natural.
 
 Para desfazer apenas os "marcar como tomado" feitos pelo app **durante
 a sessão atual** (logs de hoje), sem recriar medicamentos, horários
-nem o histórico de 6 dias, rode [`reset_logs.sql`](./reset_logs.sql).
-Escopo deliberadamente menor que o `reset_demo.sql`: mantém os UUIDs
-estáveis e é mais rápido, mas **não restaura o histórico semanal**.
-Para banca, prefira sempre o `reset_demo.sql`.
+nem o histórico dos últimos 29 dias, rode
+[`reset_logs.sql`](./reset_logs.sql). Escopo deliberadamente menor que
+o `reset_demo.sql`: mantém os UUIDs estáveis e é mais rápido, mas
+**não restaura o histórico mensal**. Para banca, prefira sempre o
+`reset_demo.sql`.
 
 ### Por que não existe botão de reset no app
 

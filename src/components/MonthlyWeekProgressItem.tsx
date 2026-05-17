@@ -1,38 +1,38 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { WeeklyDaySummaryView } from '../services/MedicationService';
+import { MonthlyWeekSummaryView } from '../services/MedicationService';
 import { colors, radius, spacing, typography } from '../theme';
 
-interface WeeklyDayProgressItemProps {
-  day: WeeklyDaySummaryView;
+interface MonthlyWeekProgressItemProps {
+  week: MonthlyWeekSummaryView;
   showDivider: boolean;
 }
 
-// Linha por dia da semana com:
-//   - rótulo do dia (Hoje / Ontem / nome do dia) + data DD/MM;
-//   - texto "X de Y registrados" — fonte primária de informação;
-//   - percentual em texto;
-//   - barra horizontal como reforço visual (nunca a única fonte).
+// Linha por "semana" no resumo mensal. Anatomia simples (rótulo +
+// texto + barra) para leitura imediata:
+//   - rótulo principal: "Esta semana / Semana passada / Há N semanas";
+//   - sublabel: faixa de datas ("DD/MM a DD/MM") — assim o bucket
+//     "Há 3 semanas", que abrange 9 dias, fica honesto sobre seu
+//     período em vez de fingir ter o mesmo tamanho dos outros.
 //
-// A barra é montada com Views simples (track + fill) para não
-// introduzir dependência de biblioteca de gráficos. O componente
-// não é clicável e não usa estilos de toque — não deve parecer
-// interativo. A barra é marcada como invisível para leitor de tela
-// porque toda a informação está duplicada em texto acima.
-export function WeeklyDayProgressItem({
-  day,
+// Não é clicável: não usa estilo de toque, não recebe onPress, não
+// tem accessibilityRole='button'. Toda a informação é exposta por
+// texto antes da barra; a barra é apenas reforço visual e fica
+// invisível para leitores de tela.
+export function MonthlyWeekProgressItem({
+  week,
   showDivider,
-}: WeeklyDayProgressItemProps) {
-  const noPlanned = day.percent === null;
+}: MonthlyWeekProgressItemProps) {
+  const noPlanned = week.percent === null;
   const description = noPlanned
     ? 'Sem medicamentos previstos'
-    : `${day.registered} de ${day.planned} registrados`;
-  const percentText = noPlanned ? '—' : `${day.percent}%`;
+    : `${week.registered} de ${week.planned} registrados`;
+  const percentText = noPlanned ? '—' : `${week.percent}%`;
 
   const accessibilityLabel = noPlanned
-    ? `${day.weekdayLabel}, ${day.dateLabel}. Sem medicamentos previstos.`
-    : `${day.weekdayLabel}, ${day.dateLabel}. ` +
-      `${day.registered} de ${day.planned} medicamentos registrados. ` +
-      `${day.percent} por cento.`;
+    ? `${week.label}, ${week.dateRangeLabel}. Sem medicamentos previstos.`
+    : `${week.label}, ${week.dateRangeLabel}. ` +
+      `${week.registered} de ${week.planned} medicamentos registrados. ` +
+      `${week.percent} por cento.`;
 
   return (
     <View
@@ -42,8 +42,8 @@ export function WeeklyDayProgressItem({
     >
       <View style={styles.headerRow}>
         <View style={styles.labelStack}>
-          <Text style={styles.weekday}>{day.weekdayLabel}</Text>
-          <Text style={styles.date}>{day.dateLabel}</Text>
+          <Text style={styles.label}>{week.label}</Text>
+          <Text style={styles.dateRange}>{week.dateRangeLabel}</Text>
         </View>
         <Text style={styles.percent}>{percentText}</Text>
       </View>
@@ -56,7 +56,7 @@ export function WeeklyDayProgressItem({
         <View
           style={[
             styles.barFill,
-            { width: noPlanned ? '0%' : `${day.percent ?? 0}%` },
+            { width: noPlanned ? '0%' : `${week.percent ?? 0}%` },
           ]}
         />
       </View>
@@ -75,21 +75,19 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: spacing.md,
   },
   labelStack: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.sm,
+    gap: 2,
   },
-  weekday: {
+  label: {
     ...typography.bodyStrong,
     color: colors.textPrimary,
   },
-  date: {
+  dateRange: {
     ...typography.caption,
     color: colors.textSecondary,
   },

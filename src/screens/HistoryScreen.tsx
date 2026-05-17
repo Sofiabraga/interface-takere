@@ -2,87 +2,74 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AppHeader } from '../components/AppHeader';
 import { Card } from '../components/Card';
-import { DayNavigator } from '../components/DayNavigator';
+import { DayPickerStrip } from '../components/DayPickerStrip';
 import { EmptyState } from '../components/EmptyState';
+import { MonthlySummaryCard } from '../components/MonthlySummaryCard';
+import { MonthlyWeekProgressItem } from '../components/MonthlyWeekProgressItem';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionTitle } from '../components/SectionTitle';
 import { StatusBadge } from '../components/StatusBadge';
-import { WeeklyDayProgressItem } from '../components/WeeklyDayProgressItem';
-import { WeeklySummaryCard } from '../components/WeeklySummaryCard';
 import { useMedicationHistory } from '../hooks/useMedicationHistory';
 import { useAppNavigation } from '../navigation/useAppNavigation';
-import { DayLogView } from '../services/MedicationService';
+import {
+  DayLogView,
+  WeeklyDaySummaryView,
+} from '../services/MedicationService';
 import { colors, spacing, typography } from '../theme';
 
 export function HistoryScreen() {
   const navigation = useAppNavigation();
-  const { history } = useMedicationHistory();
-  const hasWeek = history.summary.totalPlanned > 0;
+  const { monthly, weekly } = useMedicationHistory();
+  const hasMonth = monthly.summary.totalPlanned > 0;
 
-  // 0 = hoje, 1 = ontem, ..., (days.length-1) = 6 dias atrás.
-  // O service garante 7 dias em `history.days`; usar o tamanho da
-  // lista mantém o limite sincronizado se isso mudar no futuro.
-  const [daysFromToday, setDaysFromToday] = useState(0);
-  const maxDaysBack = history.days.length - 1;
-  const selectedDay = history.days[daysFromToday];
-  const dayLogs = selectedDay?.logs ?? [];
-
-  const canGoPrevious = daysFromToday < maxDaysBack;
-  const canGoNext = daysFromToday > 0;
-  const isToday = daysFromToday === 0;
+  // 0 = Hoje, 6 = mais antigo (mesma convenção do service). O picker
+  // exibe na ordem inversa (mais antigo à esquerda), mas o index aqui
+  // continua na linguagem do service para evitar tradução dupla.
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const selectedDay = weekly.days[selectedDayIndex];
+  const isSelectedToday = selectedDayIndex === 0;
 
   return (
     <ScreenContainer>
       <AppHeader
-        title="Histórico da semana"
-        subtitle="Veja os medicamentos que você registrou nos últimos 7 dias."
+        title="Histórico"
+        subtitle="Veja seus registros dos últimos 30 dias."
         onBack={() => navigation.goBack()}
       />
 
-      {!hasWeek ? (
+      {!hasMonth ? (
         <EmptyState
-          title="Sem registros nesta semana"
+          title="Sem registros neste mês"
           message="Quando você marcar um medicamento como tomado, ele aparece aqui."
         />
       ) : (
         <>
-          <WeeklySummaryCard summary={history.summary} />
+          <MonthlySummaryCard summary={monthly.summary} />
 
-          <SectionTitle>Resumo por dia</SectionTitle>
+          <SectionTitle>Por semana</SectionTitle>
           <Card>
-            {history.days.map((day, index) => (
-              <WeeklyDayProgressItem
-                key={day.isoDate}
-                day={day}
+            {monthly.weeks.map((week, index) => (
+              <MonthlyWeekProgressItem
+                key={week.key}
+                week={week}
                 showDivider={index > 0}
               />
             ))}
           </Card>
 
-          <SectionTitle>Medicamentos do dia</SectionTitle>
-          {selectedDay ? (
-            <DayNavigator
-              weekdayLabel={selectedDay.weekdayLabel}
-              dateLabel={selectedDay.dateLabel}
-              canGoPrevious={canGoPrevious}
-              canGoNext={canGoNext}
-              onPrevious={() => setDaysFromToday((value) => value + 1)}
-              onNext={() =>
-                setDaysFromToday((value) => Math.max(0, value - 1))
-              }
-            />
-          ) : null}
-          {dayLogs.length > 0 ? (
-            <Card>
-              {dayLogs.map((log, index) => (
-                <HistoryRow key={log.id} log={log} showDivider={index > 0} />
-              ))}
-            </Card>
+          <SectionTitle>Medicamentos da semana</SectionTitle>
+          <DayPickerStrip
+            days={weekly.days}
+            selectedIndex={selectedDayIndex}
+            onSelect={setSelectedDayIndex}
+          />
+          {selectedDay && selectedDay.logs.length > 0 ? (
+            <DayCard day={selectedDay} />
           ) : (
             <EmptyState
-              title="Nenhum medicamento nesse dia"
+              title="Nenhum medicamento neste dia"
               message={
-                isToday
+                isSelectedToday
                   ? 'Você não tem medicamentos agendados para hoje.'
                   : 'Não havia medicamentos agendados nesse dia.'
               }
@@ -94,8 +81,39 @@ export function HistoryScreen() {
   );
 }
 
+interface DayCardProps {
+  day: WeeklyDaySummaryView;
+}
+
+// Card do dia selecionado. Mantém o header "Hoje, 16/05" mesmo com a
+// pill selecionada acima — redundância intencional: confirma qual dia
+// o usuário escolheu (Nielsen #1, visibilidade do estado) e dá ao
+// leitor de tela o contexto sem depender de relação implícita com o
+// tablist.
+function DayCard({ day }: DayCardProps) {
+  return (
+    <Card>
+      <View
+        accessible
+        accessibilityRole="header"
+        accessibilityLabel={`${day.weekdayLabel}, ${day.dateLabel}`}
+        style={styles.dayHeader}
+      >
+        <Text style={styles.dayWeekday}>{day.weekdayLabel}</Text>
+        <Text style={styles.dayDate}>{day.dateLabel}</Text>
+      </View>
+      {day.logs.map((log, index) => (
+        <HistoryRow key={log.id} log={log} showDivider={index === 0} />
+      ))}
+    </Card>
+  );
+}
+
 interface HistoryRowProps {
   log: DayLogView;
+  // Aqui `showDivider` separa a primeira linha do cabeçalho do dia
+  // (e, por extensão, cada par de linhas vizinhas). Sempre true exceto
+  // se você quiser embutir a primeira linha colada no header.
   showDivider: boolean;
 }
 
@@ -146,6 +164,19 @@ function TimeLine({ label, value }: TimeLineProps) {
 }
 
 const styles = StyleSheet.create({
+  dayHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.sm,
+  },
+  dayWeekday: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+  },
+  dayDate: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
   row: {
     paddingVertical: spacing.md,
     gap: spacing.sm,

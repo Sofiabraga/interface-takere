@@ -94,8 +94,8 @@ Senhas e procedimento de criação dos usuários em
 ## Cenário demo resetável
 
 O cenário inicial das três personas (medicamentos, horários, logs de
-hoje + histórico semanal) é restaurado por um único script SQL no
-Supabase:
+hoje + histórico dos últimos 30 dias) é restaurado por um único script
+SQL no Supabase:
 
 - Antes de cada banca, sessão de avaliação ou demo: rode
   [`supabase/reset_demo.sql`](./supabase/reset_demo.sql) no SQL Editor
@@ -174,8 +174,12 @@ Nielsen e/ou SUS — registro vai em [`interacao.md`](./interacao.md).
 - Sem notificações locais ou push.
 - Sem expo-router (React Navigation native-stack escolhido).
 - Sem dark mode na v1.
-- Histórico limitado aos últimos 7 dias; sem navegação entre semanas
-  nem gráfico complexo.
+- Histórico limitado aos últimos 30 dias (hoje + 29 anteriores),
+  agrupado em 4 "semanas" no resumo mensal e 7 dias no navegador
+  por dia. Sem gráfico complexo nem navegação entre meses.
+- Percentuais do histórico são contabilidade dos registros feitos
+  pelo usuário no app — não comprovam consumo nem refletem adesão
+  clínica.
 - Cenário demo restrito a 3 personas; sem cadastro pelo app.
 
 ---

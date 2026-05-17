@@ -15,15 +15,20 @@ import {
 
 const LOG_COLUMNS = 'id, schedule_id, scheduled_for, status, taken_at';
 
-// Janela de 7 dias (hoje + 6 anteriores) usada para alimentar tanto a
-// Home (que filtra para "hoje" no service) quanto a HistoryScreen
-// (que mostra o resumo semanal). Calculada em horário local do
+// Janela de 30 dias (hoje + 29 anteriores) usada para alimentar a
+// Home (que filtra para "hoje" no service), a visão semanal e o
+// resumo mensal da HistoryScreen. Calculada em horário local do
 // dispositivo e enviada como ISO em UTC ao Postgres — o que conta é
 // que a fronteira "início do dia local" seja a mesma em ambos os lados.
-function getWeekWindowStartIso(): string {
+//
+// Trade-off: puxar 30 dias é ~4× mais bytes que a janela antiga de 7,
+// mas para o cenário demo (≤ 4 medicamentos × 30 dias = 120 logs por
+// usuário) ainda é trivial. Caso real precisaria de paginação por dia
+// ou de uma RPC dedicada a resumos.
+function getMonthWindowStartIso(): string {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  start.setDate(start.getDate() - 6);
+  start.setDate(start.getDate() - 29);
   return start.toISOString();
 }
 
@@ -77,21 +82,22 @@ export class SupabaseMedicationRepository implements MedicationRepository {
     // join aninhado.
     //
     // O `gte('scheduled_for', ...)` recorta a janela para os últimos
-    // 7 dias — o suficiente para o resumo semanal da HistoryScreen.
-    // A Home não é afetada porque o MedicationService filtra para
-    // "hoje" antes de montar o dashboard.
+    // 30 dias — o suficiente para o resumo mensal da HistoryScreen
+    // (e, por sobreposição, para a visão semanal de 7 dias e para a
+    // Home, que filtram períodos menores dentro do mesmo conjunto no
+    // MedicationService).
     const { data, error } = await this.client
       .from('medication_logs')
       .select(
         `${LOG_COLUMNS}, medication_schedules!inner(medications!inner(profile_id))`,
       )
       .eq('medication_schedules.medications.profile_id', patientId)
-      .gte('scheduled_for', getWeekWindowStartIso())
+      .gte('scheduled_for', getMonthWindowStartIso())
       .order('scheduled_for', { ascending: true })
       .returns<MedicationLogRow[]>();
 
     if (error) {
-      throw new Error(`Falha ao carregar registros da semana: ${error.message}`);
+      throw new Error(`Falha ao carregar registros do mês: ${error.message}`);
     }
     return (data ?? []).map(mapLog);
   }

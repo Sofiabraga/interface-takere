@@ -58,9 +58,10 @@ export interface DayLogView {
 // (qualquer status), ordenados por horário previsto crescente, para
 // alimentar a lista paginada por dia.
 export interface WeeklyDaySummaryView {
-  isoDate: string;        // 'YYYY-MM-DD' em horário local do dispositivo
-  weekdayLabel: string;   // 'Hoje' | 'Ontem' | 'Segunda' ... 'Domingo'
-  dateLabel: string;      // 'DD/MM'
+  isoDate: string;             // 'YYYY-MM-DD' em horário local do dispositivo
+  weekdayLabel: string;        // 'Hoje' | 'Ontem' | 'Segunda' ... 'Domingo' — usado em headers
+  weekdayShortLabel: string;   // 'Hoje' | 'Seg' | 'Ter' ... 'Dom' — usado no DayPickerStrip
+  dateLabel: string;           // 'DD/MM'
   planned: number;
   registered: number;
   percent: number | null;
@@ -80,6 +81,38 @@ export interface WeeklyHistoryView {
   days: WeeklyDaySummaryView[];
 }
 
+// Resumo agregado dos últimos 30 dias. Linguagem deliberadamente
+// neutra: "registrados / previstos" — não é adesão, não é avaliação
+// clínica, é só a contabilidade do que o usuário marcou no app.
+export interface MonthlySummaryView {
+  totalPlanned: number;
+  totalRegistered: number;
+  percent: number | null;
+  daysCovered: number;     // 30 — fixo para esta versão
+}
+
+// Bucket de uma "semana" do resumo mensal. Os 30 dias são divididos
+// em 4 blocos contíguos: 3 de 7 dias + o mais antigo com 9 dias.
+// `dateRangeLabel` ("DD/MM a DD/MM") torna a assimetria do último
+// bloco visível em vez de escondida — usuário sabe exatamente qual
+// período aquela linha cobre.
+export interface MonthlyWeekSummaryView {
+  key: string;             // 'this-week' | 'last-week' | 'two-weeks-ago' | 'three-weeks-ago'
+  label: string;           // 'Esta semana' | 'Semana passada' | 'Há 2 semanas' | 'Há 3 semanas'
+  dateRangeLabel: string;  // 'DD/MM a DD/MM' (data mais antiga primeiro)
+  planned: number;
+  registered: number;
+  percent: number | null;
+  daysInBucket: number;    // 7 ou 9
+}
+
+export interface MonthlyHistoryView {
+  patientId: string;
+  summary: MonthlySummaryView;
+  // Mais recente primeiro: weeks[0] = esta semana, weeks[3] = há 3 semanas.
+  weeks: MonthlyWeekSummaryView[];
+}
+
 const WEEKDAY_NAMES_PT = [
   'Domingo',
   'Segunda',
@@ -88,6 +121,19 @@ const WEEKDAY_NAMES_PT = [
   'Quinta',
   'Sexta',
   'Sábado',
+] as const;
+
+// Abreviações de 3 letras para o DayPickerStrip — onde cada pill tem
+// largura limitada (≈ 47px no iPhone SE) e nome inteiro não cabe sem
+// quebrar ou truncar.
+const WEEKDAY_SHORT_NAMES_PT = [
+  'Dom',
+  'Seg',
+  'Ter',
+  'Qua',
+  'Qui',
+  'Sex',
+  'Sáb',
 ] as const;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -139,6 +185,15 @@ function weekdayLabel(d: Date, daysFromToday: number): string {
   if (daysFromToday === 0) return 'Hoje';
   if (daysFromToday === 1) return 'Ontem';
   return WEEKDAY_NAMES_PT[d.getDay()];
+}
+
+// Para o DayPickerStrip só "Hoje" recebe rótulo especial — "Ontem"
+// teria 5 caracteres e quebraria visualmente o ritmo das 6 outras
+// pills (3 letras). O dia 15/05 já é claramente "ontem" pelo número
+// do dia ao lado da pill de Hoje.
+function weekdayShortLabel(d: Date, daysFromToday: number): string {
+  if (daysFromToday === 0) return 'Hoje';
+  return WEEKDAY_SHORT_NAMES_PT[d.getDay()];
 }
 
 function computePercent(num: number, denom: number): number | null {
@@ -317,6 +372,7 @@ export const MedicationService = {
       days.push({
         isoDate: formatLocalIsoDate(dayDate),
         weekdayLabel: weekdayLabel(dayDate, i),
+        weekdayShortLabel: weekdayShortLabel(dayDate, i),
         dateLabel: formatLocalDateLabel(dayDate),
         planned,
         registered,
@@ -341,6 +397,118 @@ export const MedicationService = {
       patientId,
       summary,
       days,
+    };
+  },
+
+  // Resumo mensal puro: agrega os últimos 30 dias (hoje + 29 dias
+  // anteriores) em 4 buckets de "semana". Não acessa Supabase nem UI;
+  // recebe os mesmos dados que o weekly e devolve um view-model
+  // imutável. A definição de "previsto" e "registrado" é a mesma do
+  // weekly: previsto = todos os logs do dia, registrado = subconjunto
+  // com status 'taken' e takenAt preenchido.
+  //
+  // Divisão dos 30 dias:
+  //   - Esta semana       → D-0  .. D-6   (7 dias)
+  //   - Semana passada    → D-7  .. D-13  (7 dias)
+  //   - Há 2 semanas      → D-14 .. D-20  (7 dias)
+  //   - Há 3 semanas      → D-21 .. D-29  (9 dias)
+  //
+  // O último bucket carrega 9 dias para fechar exatamente 30 dias sem
+  // criar uma 5ª "meia-semana" que polui a tela. O dateRangeLabel
+  // mostra a faixa real para que a assimetria seja honesta.
+  getMonthlyHistory(
+    patientId: string,
+    data: MedicationData,
+    now: Date = new Date(),
+  ): MonthlyHistoryView {
+    const todayStart = startOfLocalDay(now);
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(todayStart.getDate() + 1);
+    const windowStart = new Date(todayStart);
+    windowStart.setDate(todayStart.getDate() - 29);
+
+    const patientLogs = getLogsForPatient(
+      patientId,
+      data.logs,
+      data.schedules,
+    );
+
+    // Mapeia cada log para o índice 0..29 (0 = hoje, 29 = há 29 dias).
+    // Math.round absorve mudanças de DST (dias de 23h ou 25h).
+    const logsByDayOffset: MedicationLog[][] = Array.from(
+      { length: 30 },
+      () => [],
+    );
+    for (const log of patientLogs) {
+      const scheduled = new Date(log.scheduledFor);
+      if (scheduled < windowStart || scheduled >= tomorrowStart) continue;
+      const dayStart = startOfLocalDay(scheduled);
+      const idx = Math.round(
+        (todayStart.getTime() - dayStart.getTime()) / MS_PER_DAY,
+      );
+      if (idx >= 0 && idx < 30) {
+        logsByDayOffset[idx].push(log);
+      }
+    }
+
+    // [labelKey, label, offsetMin, offsetMax]. offsetMin é o mais
+    // recente (menor offset); offsetMax é o mais antigo.
+    const bucketDefs: Array<[
+      MonthlyWeekSummaryView['key'],
+      string,
+      number,
+      number,
+    ]> = [
+      ['this-week', 'Esta semana', 0, 6],
+      ['last-week', 'Semana passada', 7, 13],
+      ['two-weeks-ago', 'Há 2 semanas', 14, 20],
+      ['three-weeks-ago', 'Há 3 semanas', 21, 29],
+    ];
+
+    const weeks: MonthlyWeekSummaryView[] = bucketDefs.map(
+      ([key, label, offsetMin, offsetMax]) => {
+        let planned = 0;
+        let registered = 0;
+        for (let i = offsetMin; i <= offsetMax; i++) {
+          const bucket = logsByDayOffset[i];
+          planned += bucket.length;
+          registered += bucket.filter(
+            (log) => log.status === 'taken' && log.takenAt,
+          ).length;
+        }
+        // Datas de extremidade do bucket. `recent` é o dia mais novo,
+        // `oldest` o mais antigo. O rótulo formata "DD/MM a DD/MM"
+        // do mais antigo para o mais recente — leitura natural.
+        const recent = new Date(todayStart);
+        recent.setDate(todayStart.getDate() - offsetMin);
+        const oldest = new Date(todayStart);
+        oldest.setDate(todayStart.getDate() - offsetMax);
+        return {
+          key,
+          label,
+          dateRangeLabel: `${formatLocalDateLabel(oldest)} a ${formatLocalDateLabel(recent)}`,
+          planned,
+          registered,
+          percent: computePercent(registered, planned),
+          daysInBucket: offsetMax - offsetMin + 1,
+        };
+      },
+    );
+
+    const totalPlanned = weeks.reduce((sum, w) => sum + w.planned, 0);
+    const totalRegistered = weeks.reduce((sum, w) => sum + w.registered, 0);
+
+    const summary: MonthlySummaryView = {
+      totalPlanned,
+      totalRegistered,
+      percent: computePercent(totalRegistered, totalPlanned),
+      daysCovered: 30,
+    };
+
+    return {
+      patientId,
+      summary,
+      weeks,
     };
   },
 };
