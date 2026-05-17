@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useNow } from '../hooks/useNow';
 import { TodayMedicationView } from '../services/MedicationService';
 import { colors, spacing, typography } from '../theme';
+import { formatRelativeTime, RelativeTense } from '../utils/relativeTime';
 import { Card } from './Card';
 import { PrimaryButton } from './PrimaryButton';
 import { StatusBadge } from './StatusBadge';
@@ -17,6 +19,11 @@ interface NextMedicationCardProps {
 // pista de contexto ("Próximo medicamento") e deixa o badge de status
 // ocupar o canto direito sem competir com outro pill colorido.
 export function NextMedicationCard({ next, onMarkAsTaken }: NextMedicationCardProps) {
+  // O hook precisa ser chamado antes de qualquer return condicional —
+  // o early-return para `!next` viria antes do useNow se trocado de
+  // ordem. Mantém o React feliz e o componente coerente.
+  const now = useNow();
+
   if (!next) {
     return (
       <Card>
@@ -27,6 +34,8 @@ export function NextMedicationCard({ next, onMarkAsTaken }: NextMedicationCardPr
       </Card>
     );
   }
+
+  const relative = formatRelativeTime(next.scheduledIso, now);
 
   return (
     <Card>
@@ -43,6 +52,13 @@ export function NextMedicationCard({ next, onMarkAsTaken }: NextMedicationCardPr
         </View>
       </View>
 
+      <Text
+        style={[styles.relative, relativeColorStyle(relative.tense)]}
+        accessibilityLabel={`Em relação ao horário do seu dispositivo: ${relative.label}.`}
+      >
+        {relative.label}
+      </Text>
+
       {next.medication.instructions ? (
         <Text style={styles.instructions}>{next.medication.instructions}</Text>
       ) : null}
@@ -55,6 +71,22 @@ export function NextMedicationCard({ next, onMarkAsTaken }: NextMedicationCardPr
       </View>
     </Card>
   );
+}
+
+// Cor segue a paleta de status já validada por contraste AA:
+//   future → primaryDark (neutro/positivo, "ainda há tempo")
+//   now    → statusPendingText (âmbar escuro, atenção)
+//   past   → statusLateText (vermelho escuro, urgência)
+// Sempre acompanhado de texto explícito; nunca depende só de cor.
+function relativeColorStyle(tense: RelativeTense) {
+  switch (tense) {
+    case 'future':
+      return { color: colors.primaryDark };
+    case 'now':
+      return { color: colors.statusPendingText };
+    case 'past':
+      return { color: colors.statusLateText };
+  }
 }
 
 const styles = StyleSheet.create({
@@ -102,6 +134,10 @@ const styles = StyleSheet.create({
   dose: {
     ...typography.body,
     color: colors.textSecondary,
+  },
+  relative: {
+    ...typography.bodyStrong,
+    marginTop: spacing.xs,
   },
   instructions: {
     ...typography.body,

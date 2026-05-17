@@ -1997,3 +1997,343 @@ As melhorias mostram preocupação com princípios de IHC, como legibilidade, fe
 - Ainda não há testes automatizados de acessibilidade.
 - Hints de acessibilidade ajudam leitores de tela, mas precisam ser testados em dispositivos reais.
 - A interface pode precisar de ajustes adicionais após a revisão heurística formal.
+
+---
+
+### Interação C27
+
+**Categoria:**  
+Avaliação heurística / Nielsen / Usabilidade / Acessibilidade / Análise pré-avaliação
+
+**Tela ou funcionalidade:**  
+Revisão heurística formal da interface completa, incluindo LoginScreen, HomeScreen, MedicationListScreen, MedicationDetailScreen, HistoryScreen, ProfileMenu e fluxos transversais.
+
+**Objetivo do prompt:**  
+Realizar uma revisão heurística formal da interface usando as 10 heurísticas de Nielsen, identificando problemas de usabilidade antes da avaliação com participantes. A etapa não deveria implementar código, mas gerar uma análise crítica estruturada para orientar os ajustes da próxima interação.
+
+**Prompt enviado:**  
+Foi solicitado que Claude analisasse a interface atual, já integrada com Supabase, login, persistência, histórico mensal, perfil de usuário, estados de loading/erro e reset demo. A análise deveria considerar as 10 heurísticas de Nielsen e gerar uma tabela com problemas, severidade, prioridade, justificativa e recomendação de correção.
+
+**Resumo da resposta do Claude:**  
+Claude realizou uma revisão heurística formal e identificou 27 problemas ou oportunidades de melhoria, classificados por heurística, severidade e prioridade. A maioria dos problemas ficou entre severidade 1 e 2, indicando pontos de cópia, consistência, hierarquia visual e clareza, em vez de falhas críticas de fluxo.
+
+Os problemas mais importantes apontados foram:
+- uso do termo “Aderência” em `accessibilityLabel`, considerado inadequado por ter conotação clínica/julgadora;
+- título duplicado entre HomeScreen e MedicationListScreen, o que pode fazer a tela de lista parecer redundante;
+- ambiguidade no histórico entre “Por semana” e “Medicamentos da semana”, usando o mesmo termo para escopos diferentes;
+- botões “Sair da conta” e “Fechar” visualmente muito parecidos no ProfileMenu;
+- resumo da MedicationListScreen mostrando números do dia inteiro mesmo quando um filtro está selecionado, sem explicar que o resumo considera todos os status.
+
+Claude também destacou pontos fortes da interface, como uso consistente de status por texto + cor, optimistic update com desfazer, estados vazios explicativos, linguagem neutra no histórico, bons touch targets, tipografia legível, confirmação de logout, estados de loading/erro centralizados e ausência de ícones ambíguos.
+
+**Decisão tomada:**  
+Usado como base para definição dos ajustes da próxima etapa.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Nenhum
+
+**Problema ou limitação:**  
+A interação não gerou código, mas produziu uma lista ampla de problemas potenciais. Nem todos devem ser corrigidos imediatamente, pois alguns são cosméticos, opinativos ou poderiam aumentar o escopo. A próxima etapa deve focar apenas nos problemas de maior impacto e baixo risco antes da avaliação com participantes.
+
+**Evidência:**  
+Não houve alteração de arquivos nesta etapa.
+
+Principais problemas priorizados para correção:
+- P19 — remover “Aderência” de `accessibilityLabel`.
+- P04 — diferenciar melhor HomeScreen e MedicationListScreen.
+- P16/P17 — renomear seções ambíguas do histórico.
+- P20 — diferenciar visualmente “Sair da conta” de “Fechar”.
+- P10 — deixar explícito que o resumo da MedicationListScreen considera todos os status.
+
+**Top 5 problemas mais importantes:**  
+1. **P19 — Linguagem clínica em accessibilityLabel:** o termo “Aderência” aparece em uma propriedade não visual, mas leitor de tela também é interface. Isso viola a linguagem neutra definida para o projeto.
+2. **P04 — Redundância entre Home e lista:** HomeScreen e MedicationListScreen usam títulos muito parecidos, o que pode gerar sensação de tela duplicada.
+3. **P16/P17 — Ambiguidade no histórico:** “Por semana” e “Medicamentos da semana” usam a mesma palavra para escopos diferentes, podendo aumentar a carga cognitiva.
+4. **P20 — Logout pouco diferenciado:** “Sair da conta” e “Fechar” têm aparência muito parecida, mesmo sendo ações com pesos diferentes.
+5. **P10 — Resumo não contextual ao filtro:** o resumo da lista mostra números gerais do dia mesmo quando há filtro selecionado, sem explicitar isso.
+
+**Pontos fortes identificados:**  
+- Status comunicados por texto e cor.
+- Feedback imediato com optimistic update.
+- Ação de desfazer disponível após marcação.
+- Estados vazios específicos por contexto.
+- Linguagem do histórico centrada em “registros” e “previstos”, sem tom clínico.
+- Touch targets confortáveis.
+- Tipografia legível.
+- LoadingState e ErrorState centralizados.
+- Confirmação antes do logout.
+- Arquitetura preservando telas sem acesso direto ao Supabase.
+
+**Riscos para SUS:**  
+- A ambiguidade no histórico pode afetar a percepção de facilidade de aprendizado.
+- A sensação de redundância entre Home e lista pode afetar a percepção de integração.
+- Resumo da lista sem contexto de filtro pode gerar dúvida sobre funcionamento.
+- Botões de logout e fechar parecidos podem afetar percepção de segurança.
+- Termos inadequados em acessibilidade podem ser apontados negativamente em avaliação de IHC.
+
+**Escopo recomendado para a próxima interação:**  
+A próxima interação deve implementar apenas ajustes pequenos e seguros:
+- remover “Aderência” de labels acessíveis;
+- renomear a MedicationListScreen para “Agenda completa de hoje”;
+- tornar explícito que o resumo da lista considera todos os status;
+- renomear seções do histórico para evitar ambiguidade;
+- diferenciar visualmente “Sair da conta” de “Fechar” no ProfileMenu;
+- ajustar alguns textos da MedicationDetailScreen;
+- aumentar labels pequenas no detalhe, se não prejudicar o layout;
+- permitir dispensar o FeedbackBanner com toque, se for simples e seguro.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque representa uma avaliação heurística estruturada da interface desenvolvida com apoio de Claude. A análise mostra que, após várias iterações funcionais e de polimento, os problemas restantes são majoritariamente de severidade baixa ou média, concentrados em linguagem, consistência e hierarquia secundária.
+
+Um ponto interessante é o problema do termo “Aderência” em `accessibilityLabel`. Ele mostra que acessibilidade também deve ser tratada como parte da interface, mesmo quando o texto não aparece visualmente. Isso é um exemplo importante de como a revisão humana continua necessária para verificar detalhes que podem escapar em propriedades não visuais.
+
+A revisão também mostra uma tensão recorrente entre reutilizar termos/componentes e diferenciar contextos. Por exemplo, o uso de “semana” em diferentes partes do histórico pode parecer consistente para o desenvolvedor, mas gerar ambiguidade para usuários.
+
+**Possíveis riscos ou limitações:**  
+- A revisão foi feita por inspeção, não por participantes reais.
+- Alguns problemas dependem de validação empírica para saber se realmente afetam usuários.
+- A lista de problemas é ampla, e corrigir todos poderia atrasar o cronograma.
+- Alguns ajustes são de copywriting e podem depender de preferência do avaliador/orientador.
+- A próxima etapa deve evitar redesign ou features novas, focando apenas em correções de alto impacto e baixo risco.
+
+---
+
+### Interação C28
+
+**Categoria:**  
+Ajustes pós-Nielsen / UX / Acessibilidade / Copywriting / Consistência visual
+
+**Tela ou funcionalidade:**  
+Correções prioritárias identificadas na revisão heurística formal da C27.
+
+**Objetivo do prompt:**  
+Implementar apenas os ajustes pequenos, seguros e prioritários encontrados na revisão heurística de Nielsen, sem adicionar funcionalidades grandes, sem alterar backend/schema e sem reestruturar telas principais.
+
+**Prompt enviado:**  
+Foi solicitado que Claude corrigisse problemas específicos da C27: remover linguagem clínica/julgadora de labels acessíveis, diferenciar HomeScreen e MedicationListScreen, deixar claro que o resumo da lista considera todos os status, corrigir ambiguidades no histórico mensal, diferenciar visualmente a ação “Sair da conta”, ajustar textos da MedicationDetailScreen, melhorar labels pequenas e permitir dispensar o FeedbackBanner com toque.
+
+**Resumo da resposta do Claude:**  
+Claude modificou 9 arquivos, sem adicionar dependências e sem alterar SQL, Supabase, policies ou `MedicationService`.
+
+No `ProfileMenu`, o termo “Aderência” foi removido de `accessibilityLabel` e substituído por linguagem neutra: “Medicamentos registrados nos últimos 30 dias: X por cento”. A função interna também foi renomeada para evitar reintrodução futura do termo.
+
+Na `MedicationListScreen`, o título passou a ser “Agenda completa de hoje”, diferenciando melhor essa tela da HomeScreen. O subtítulo foi expandido para explicar que a tela permite ver todos os medicamentos do dia e filtrar por status. Além disso, o `MedicationSummaryCard` ganhou uma nota explicativa informando que o resumo considera todos os medicamentos de hoje, independentemente do filtro selecionado.
+
+Na `HistoryScreen`, os títulos foram ajustados para remover ambiguidade: “Por semana” virou “Resumo por períodos” e “Medicamentos da semana” virou “Detalhes por dia”. A visualização foi preservada, sem reestruturar o histórico mensal e sem voltar a exibir lista longa de registros.
+
+No `ProfileMenu`, a ação “Sair da conta” foi diferenciada visualmente da ação “Fechar”. O `PrimaryButton` ganhou uma variante `destructive`, com texto e borda em cor de alerta. O menu passou a mostrar “Fechar” primeiro, um divisor, uma explicação sobre precisar entrar novamente e, por fim, o botão destrutivo “Sair da conta”. A confirmação por `Alert` foi mantida.
+
+Na `MedicationDetailScreen`, textos mais burocráticos foram simplificados: “Registro da tomada” virou “Detalhes do registro” e “Dose cadastrada” virou “Dose”. As labels dos campos foram aumentadas de 14px para 16px, melhorando legibilidade sem alterar a lógica da tela.
+
+O `FeedbackBanner` ganhou a possibilidade de ser dispensado manualmente com toque no corpo do banner, mantendo o timeout como fallback. O botão “Desfazer” continua funcionando separadamente, sem conflito com o gesto de dispensar.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+Os ajustes resolveram os principais problemas apontados na revisão heurística sem aumentar o escopo. Ainda permaneceram problemas menores ou opinativos, como validação inline de e-mail, microfeedback ao preencher perfis demo, possível duplicação do próximo medicamento na Home, ausência de “Marcar como tomado” direto na lista, ausência de legenda compacta em algumas telas e falta de tela de ajuda.
+
+**Evidência:**  
+Arquivos modificados:
+- `src/components/ProfileMenu.tsx`
+- `src/components/PrimaryButton.tsx`
+- `src/components/MedicationSummaryCard.tsx`
+- `src/components/FeedbackBanner.tsx`
+- `src/hooks/useMedicationDetail.ts`
+- `src/screens/HomeScreen.tsx`
+- `src/screens/MedicationListScreen.tsx`
+- `src/screens/MedicationDetailScreen.tsx`
+- `src/screens/HistoryScreen.tsx`
+
+Arquivos criados:
+- Nenhum.
+
+Dependências:
+- Nenhuma dependência nova foi adicionada.
+
+Backend/Supabase:
+- Nenhum schema, script SQL, policy ou repository foi alterado.
+
+Typecheck:
+- `npm run typecheck` passa sem erros.
+
+**Problemas da C27 corrigidos:**  
+- **P19:** remoção do termo “Aderência” de `accessibilityLabel`, substituído por linguagem neutra.
+- **P04:** diferenciação entre HomeScreen e MedicationListScreen por meio do título “Agenda completa de hoje”.
+- **P10:** inclusão de nota no resumo da lista explicando que ele considera todos os medicamentos de hoje, independentemente do filtro.
+- **P16/P17:** renomeação das seções do histórico para evitar ambiguidade no uso de “semana”.
+- **P20:** diferenciação visual da ação “Sair da conta” no ProfileMenu com variante destrutiva, separador e texto auxiliar.
+- **P12:** simplificação de textos na MedicationDetailScreen.
+- **P13:** aumento das labels de campos no detalhe para 16px.
+- **P08:** possibilidade de dispensar o FeedbackBanner manualmente.
+
+**Problemas da C27 não corrigidos:**  
+- **P01:** microfeedback ao preencher credenciais demo não foi implementado, pois o `accessibilityHint` da C26 já cobre parte do problema.
+- **P02:** validação inline de e-mail ficou fora do escopo, já que o fluxo demo prioriza botões prontos.
+- **P03:** placeholder “Sua senha” foi mantido por ser ajuste opinativo de copy.
+- **P05:** duplicação do próximo medicamento na Home não foi alterada por ser mudança comportamental.
+- **P06/P07:** densidade e subtítulo da Home foram mantidos para evitar mexer no fluxo principal antes dos testes.
+- **P09:** legenda compacta em Detail/History não foi adicionada para não aumentar densidade.
+- **P11:** ação “Marcar como tomado” inline na lista não foi adicionada, mantendo a lista como tela de seleção.
+- **P14/P15:** estados e desfazer no detalhe foram mantidos para evitar mexer no modelo de estado.
+- **P22/P23/P24:** loading unificado, erro de rede específico e indicador “Salvando...” foram deixados de fora para evitar refatoração ou dependências novas.
+- **P26:** tela de ajuda não foi criada por ser nova funcionalidade.
+
+**Impacto nas heurísticas de Nielsen:**  
+- **H1 — Visibilidade do estado do sistema:** o resumo da lista agora explica seu escopo; labels do detalhe ficaram mais legíveis.
+- **H2 — Correspondência com o mundo real:** textos como “Dose” e “Detalhes do registro” ficam mais naturais; `accessibilityLabel` deixou de usar terminologia clínica.
+- **H3 — Controle e liberdade do usuário:** o FeedbackBanner agora pode ser dispensado manualmente.
+- **H4 — Consistência e padrões:** Home e lista passaram a ter papéis mais diferenciados; histórico deixou de usar “semana” em escopos ambíguos.
+- **H5 — Prevenção de erros:** “Sair da conta” ficou visualmente distinto de “Fechar”, reduzindo risco de ação acidental.
+- **H6 — Reconhecimento em vez de memorização:** seções do histórico ficaram mais autoexplicativas.
+- **H7 — Flexibilidade e eficiência de uso:** usuários podem fechar banners sem esperar timeout.
+- **H8 — Design estético e minimalista:** as mudanças foram pontuais, sem adicionar novos blocos visuais pesados.
+- **H9 — Ajuda a reconhecer e se recuperar de erros:** banners de erro também podem ser dispensados.
+- **H10 — Ajuda e documentação:** o subtítulo da lista funciona como orientação contextual.
+
+**Impacto esperado no SUS:**  
+As mudanças tendem a melhorar a percepção de facilidade de uso, consistência e aprendizado. A distinção entre Home e agenda reduz sensação de duplicação; a nota no resumo da lista evita que o usuário interprete o filtro como quebrado; a linguagem mais neutra e natural no detalhe reduz esforço de compreensão; e o histórico com títulos menos ambíguos reduz carga cognitiva.
+
+O botão “Sair da conta” mais claramente diferenciado também pode aumentar a sensação de segurança e controle, enquanto o banner dispensável reduz a sensação de interface travada ou intrusiva.
+
+**Checklist de validação local:**  
+- Rodar `npm run typecheck`.
+- Login como Maria funciona.
+- Home continua mostrando próximo medicamento, resumo e ações.
+- Tocar em “Ver agenda completa de hoje” abre a tela com título “Agenda completa de hoje”.
+- MedicationListScreen mostra nota explicando que o resumo considera todos os medicamentos de hoje.
+- Filtros continuam funcionando.
+- MedicationDetailScreen mostra “Detalhes do registro” e “Dose”.
+- Labels do detalhe aparecem mais legíveis.
+- Marcar medicamento como tomado continua persistindo.
+- FeedbackBanner aparece e pode ser dispensado tocando fora do botão “Desfazer”.
+- Botão “Desfazer” continua funcionando normalmente.
+- HistoryScreen mostra “Resumo por períodos” e “Detalhes por dia”.
+- Histórico mensal continua sem lista longa.
+- ProfileMenu mostra “Fechar” separado de “Sair da conta”.
+- “Sair da conta” aparece como ação destrutiva e ainda exige confirmação.
+- VoiceOver/TalkBack não lê mais “Aderência”.
+- VoiceOver/TalkBack lê “Medicamentos registrados nos últimos 30 dias: X por cento”.
+- Login/logout, persistência, loading/error e navegação continuam funcionando.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque mostra o ciclo completo de avaliação heurística seguida de correções priorizadas. Claude foi utilizado para identificar problemas e, depois, apoiar a implementação de ajustes pequenos e defensáveis.
+
+A interação também evidencia que os problemas restantes após o desenvolvimento funcional estavam concentrados em linguagem, consistência e acessibilidade, não em falhas estruturais. Isso pode ser discutido no TCC como um exemplo de como o LLM contribuiu para refinamento incremental da interface, mas ainda exigiu seleção humana de escopo e priorização.
+
+O caso do termo “Aderência” em `accessibilityLabel` é especialmente relevante, pois mostra que textos acessíveis também fazem parte da interface e precisam seguir as mesmas diretrizes de linguagem neutra que os textos visíveis.
+
+---
+
+### Interação C29
+
+**Categoria:**  
+UX / Controle do usuário / Correção de erro / Persistência / Ajuste pós-Nielsen
+
+**Tela ou funcionalidade:**  
+Correção de registro de medicamento marcado como tomado na MedicationDetailScreen.
+
+**Objetivo do prompt:**  
+Adicionar uma forma simples e segura de corrigir um medicamento marcado como tomado por engano, permitindo ao usuário recuperar controle mesmo depois que o banner temporário de “Desfazer” desaparece. A ação deveria ficar disponível apenas na tela de detalhe, sem poluir a HomeScreen, a lista ou o histórico.
+
+**Prompt enviado:**  
+Foi solicitado que Claude implementasse uma ação discreta “Corrigir registro” na `MedicationDetailScreen` para medicamentos já tomados hoje. A ação deveria exibir confirmação antes de alterar o registro, persistir a correção no Supabase, atualizar Home/List/Detail/History, manter rollback em caso de erro e preservar linguagem neutra, sem termos de julgamento ou implicação clínica.
+
+**Resumo da resposta do Claude:**  
+Claude explicou que a infraestrutura de correção já estava disponível no provider, hook e repositório, e que esta etapa concentrou ajustes na superfície de UX. A `MedicationDetailScreen` passou a detectar quando o registro está com `status === 'taken'` e, nesse caso, mostra o botão secundário “Corrigir registro” em vez do botão primário “Marcar como tomado”.
+
+Ao tocar em “Corrigir registro”, a tela exibe um `Alert` com o título “Corrigir registro?” e a mensagem “Este medicamento voltará ao status anterior para hoje.”. O usuário pode cancelar ou confirmar a correção. Ao confirmar, a tela chama `correctTakenLog(logId)` pelo contexto.
+
+A correção reaproveita `repository.restoreLog`, sem criar uma nova função na interface do repositório. Diferentemente do “Desfazer” do `FeedbackBanner`, que depende de `previousLogRef` e só funciona por alguns segundos, a correção funciona para qualquer log de hoje com status `taken`. O provider recalcula o status de destino em tempo de execução: se o horário previsto já passou, o registro volta para `late`; caso contrário, volta para `pending`.
+
+O `SupabaseMedicationRepository.restoreLog` atualiza `status` e `taken_at` juntos no banco, respeitando a constraint que exige `taken_at` apenas quando o status é `taken`. A atualização continua protegida por RLS, sem uso de `service_role` e sem alteração de schema.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A solução atende ao objetivo de permitir correção de registros do dia atual, mas não cria histórico de correções nem permite editar registros antigos no histórico. Essa limitação é aceitável para o escopo do TCC, pois a funcionalidade busca apenas recuperar erros recentes de interação, não implementar auditoria clínica ou edição completa de histórico.
+
+**Evidência:**  
+Arquivos modificados:
+- `src/screens/MedicationDetailScreen.tsx`
+- `src/contexts/MedicationProvider.tsx`
+
+Arquivos não modificados:
+- Repositórios
+- Hooks
+- Schema do Supabase
+- Scripts SQL
+
+Typecheck:
+- TypeScript passa sem erros.
+
+**Como a correção funciona:**  
+- Se o medicamento está pendente ou atrasado, a tela mostra o botão primário “Marcar como tomado”.
+- Se o medicamento já está tomado, a tela mostra o botão secundário “Corrigir registro”.
+- Ao tocar em “Corrigir registro”, aparece um `Alert` de confirmação.
+- Se o usuário cancela, nada muda.
+- Se confirma, o provider aplica optimistic update.
+- O registro volta para `pending` ou `late`, conforme o horário previsto e o momento atual.
+- O Supabase é atualizado com `status = pending/late` e `taken_at = null`.
+- Em caso de sucesso, a UI mantém o estado corrigido.
+- Em caso de falha, o provider faz rollback para `taken` e mostra erro amigável.
+
+**Decisões de UX e linguagem:**  
+Foi escolhido o termo “Corrigir registro” porque ele é mais neutro e menos técnico do que “desmarcar” ou “remover tomada”. A linguagem reforça que o app registra uma ação informada pelo usuário, mas não comprova consumo real do medicamento.
+
+A confirmação via `Alert` foi mantida porque a ação altera um registro já salvo no banco, fora da janela curta do “Desfazer”. Isso ajuda na prevenção de erros sem deixar a ação principal confusa.
+
+O botão “Corrigir registro” usa variante secundária, deixando claro que é uma ação de exceção, não a ação principal da tela. Depois da correção, não há um novo botão de desfazer em cascata, pois a confirmação já protege a ação e o usuário pode marcar novamente como tomado se necessário.
+
+**Checklist de validação local:**  
+- Login no app.
+- Abrir o detalhe de um medicamento pendente.
+- Confirmar que aparece o botão “Marcar como tomado”.
+- Marcar o medicamento como tomado.
+- Confirmar que o banner verde com “Desfazer” aparece.
+- Confirmar que o botão da tela vira “Corrigir registro”.
+- Esperar o banner desaparecer.
+- Confirmar que “Corrigir registro” continua disponível.
+- Tocar em “Corrigir registro”.
+- Confirmar que aparece o alerta “Corrigir registro?”.
+- Tocar em “Cancelar” e confirmar que nada muda.
+- Tocar novamente em “Corrigir registro” e confirmar a ação.
+- Confirmar que o status volta para pendente ou atrasado.
+- Confirmar que o botão volta para “Marcar como tomado”.
+- Voltar para a Home e verificar os contadores.
+- Abrir a lista e conferir se os filtros refletem o novo status.
+- Abrir o histórico e confirmar que o medicamento corrigido não aparece mais como registrado.
+- Fazer logout/login e confirmar que a correção persistiu no Supabase.
+- Testar com internet desligada e confirmar rollback + erro amigável.
+- Confirmar que “Marcar como tomado” e o “Desfazer” do banner continuam funcionando.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque responde diretamente a uma questão de usabilidade identificada a partir das heurísticas de Nielsen: controle e liberdade do usuário. O sistema deixa de depender apenas de uma janela curta de desfazer e passa a oferecer uma alternativa mais estável para corrigir erros.
+
+A solução também preserva design minimalista, pois a ação não foi adicionada à Home, à lista nem ao histórico. Ela aparece apenas no detalhe, onde o usuário está mais focado naquele medicamento específico. Isso reduz risco de poluir a interface principal.
+
+Do ponto de vista do TCC, a interação mostra uma decisão equilibrada entre usabilidade e controle de escopo: foi adicionada uma forma de recuperação de erro sem transformar o app em editor completo de histórico ou sistema clínico com auditoria de alterações.
+
+**Possíveis riscos ou limitações:**  
+- Não há trilha de auditoria das correções.
+- Só é possível corrigir registros do dia atual.
+- O histórico mensal não permite edição de registros antigos.
+- O status de destino é recalculado usando `Date.now()` do dispositivo, podendo ser afetado por relógio incorreto.
+- A correção limpa o banner de “Desfazer” se ele ainda estiver ativo, pois a ação confirmada tem prioridade sobre o feedback temporário.
+- A ausência de auditoria seria inadequada para um sistema clínico real, mas é aceitável no escopo acadêmico e demonstrativo do app.

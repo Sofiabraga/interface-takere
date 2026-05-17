@@ -5,9 +5,15 @@ import { Card } from './Card';
 
 interface MedicationSummaryCardProps {
   summary: DailySummary;
+  // Linha discreta no rodapé do card. Usada pela MedicationListScreen
+  // para esclarecer que o resumo considera todos os status, mesmo com
+  // um filtro aplicado — sem isso, o usuário pode interpretar como
+  // bug ("filtrei Atrasados, mas o resumo continua mostrando 3
+  // Tomados"). Omita na Home, onde a interpretação já é direta.
+  note?: string;
 }
 
-export function MedicationSummaryCard({ summary }: MedicationSummaryCardProps) {
+export function MedicationSummaryCard({ summary, note }: MedicationSummaryCardProps) {
   return (
     <Card>
       <Text style={styles.title}>Resumo do dia</Text>
@@ -34,6 +40,7 @@ export function MedicationSummaryCard({ summary }: MedicationSummaryCardProps) {
           color={colors.statusLateText}
         />
       </View>
+      {note ? <Text style={styles.note}>{note}</Text> : null}
     </Card>
   );
 }
@@ -93,5 +100,10 @@ const styles = StyleSheet.create({
     width: 1,
     height: 44,
     backgroundColor: colors.border,
+  },
+  note: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
   },
 });

@@ -46,7 +46,7 @@ export function HistoryScreen() {
         <>
           <MonthlySummaryCard summary={monthly.summary} />
 
-          <SectionTitle>Por semana</SectionTitle>
+          <SectionTitle>Resumo por períodos</SectionTitle>
           <Card>
             {monthly.weeks.map((week, index) => (
               <MonthlyWeekProgressItem
@@ -57,7 +57,7 @@ export function HistoryScreen() {
             ))}
           </Card>
 
-          <SectionTitle>Medicamentos da semana</SectionTitle>
+          <SectionTitle>Detalhes por dia</SectionTitle>
           <DayPickerStrip
             days={weekly.days}
             selectedIndex={selectedDayIndex}

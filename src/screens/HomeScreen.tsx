@@ -29,9 +29,13 @@ export function HomeScreen() {
     patient,
     dashboard,
     lastTaken,
+    lastCorrected,
     actionError,
     markAsTaken,
     undoLastTaken,
+    dismissFeedback,
+    dismissCorrected,
+    dismissActionError,
   } = useTodayMedications();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -106,11 +110,21 @@ export function HomeScreen() {
           o timer do erro expira, lastTaken volta a aparecer e o
           usuário pode tentar Desfazer de novo. */}
       {actionError ? (
-        <FeedbackBanner message={actionError} variant="error" />
+        <FeedbackBanner
+          message={actionError}
+          variant="error"
+          onDismiss={dismissActionError}
+        />
       ) : lastTaken ? (
         <FeedbackBanner
           message={`${lastTaken.medicationName} marcado como tomado.`}
           onUndo={undoLastTaken}
+          onDismiss={dismissFeedback}
+        />
+      ) : lastCorrected ? (
+        <FeedbackBanner
+          message={`Registro de ${lastCorrected.medicationName} removido.`}
+          onDismiss={dismissCorrected}
         />
       ) : null}
 

@@ -106,7 +106,7 @@ export function ProfileMenu({
                     ? '1 medicamento cadastrado'
                     : `${totalMedications} medicamentos cadastrados`}
                 </Text>
-                <AdherenceBlock adherence={monthlyAdherence} />
+                <MonthlyRegistrationsBlock adherence={monthlyAdherence} />
               </View>
 
               <View style={styles.section}>
@@ -120,20 +120,27 @@ export function ProfileMenu({
                 </Text>
               </View>
 
-              <Text style={styles.helper}>
-                Você precisará entrar novamente para acessar seus registros.
-              </Text>
-
               <View style={styles.actions}>
-                <PrimaryButton
-                  label="Sair da conta"
-                  variant="secondary"
-                  onPress={onSignOut}
-                />
                 <PrimaryButton
                   label="Fechar"
                   variant="secondary"
                   onPress={onClose}
+                />
+                {/* Divider + helper text separam a ação destrutiva da
+                    ação neutra acima. Combinado com a variant
+                    'destructive' do PrimaryButton (borda + texto em
+                    vermelho discreto), elimina a ambiguidade visual
+                    entre "Fechar" e "Sair da conta". */}
+                <View style={styles.dangerSeparator} />
+                <Text style={styles.helper}>
+                  Você precisará entrar novamente para acessar seus
+                  registros.
+                </Text>
+                <PrimaryButton
+                  label="Sair da conta"
+                  variant="destructive"
+                  onPress={onSignOut}
+                  accessibilityHint="Encerra a sessão. Será necessário entrar novamente."
                 />
               </View>
 
@@ -148,16 +155,19 @@ export function ProfileMenu({
   );
 }
 
-// Bloco de aderência dos últimos 30 dias. Quando percent é null
+// Bloco de registros dos últimos 30 dias. Quando percent é null
 // (paciente sem prescrição na janela) mostramos um placeholder neutro
 // em vez de barra zerada — barra zerada poderia ser interpretada como
 // "você não tomou nada", que não é o significado real.
 //
 // Cor única (primary) na barra: evitar verde/amarelo/vermelho aqui é
-// uma escolha consciente. Aderência neste app é contabilidade
-// passiva, não avaliação clínica — usar paleta de status sugeriria
-// julgamento e abriria espaço pra avaliador de IHC questionar o tom.
-function AdherenceBlock({ adherence }: { adherence: MonthlyAdherence | null }) {
+// uma escolha consciente. Este painel é contabilidade passiva, não
+// avaliação clínica — usar paleta de status sugeriria julgamento e
+// abriria espaço pra avaliador de IHC questionar o tom. Pelo mesmo
+// motivo o `accessibilityLabel` da barra fala em "medicamentos
+// registrados", evitando termos como "aderência/adesão" que carregam
+// conotação de cumprimento.
+function MonthlyRegistrationsBlock({ adherence }: { adherence: MonthlyAdherence | null }) {
   if (!adherence || adherence.percent === null) {
     return (
       <>
@@ -177,7 +187,7 @@ function AdherenceBlock({ adherence }: { adherence: MonthlyAdherence | null }) {
       <View
         style={styles.barTrack}
         accessibilityRole="progressbar"
-        accessibilityLabel={`Aderência dos últimos 30 dias: ${adherence.percent}%`}
+        accessibilityLabel={`Medicamentos registrados nos últimos 30 dias: ${adherence.percent} por cento`}
         accessibilityValue={{ min: 0, max: 100, now: adherence.percent }}
       >
         <View style={[styles.barFill, { width: `${widthPercent}%` }]} />
@@ -273,6 +283,11 @@ const styles = StyleSheet.create({
   actions: {
     gap: spacing.sm,
     marginTop: spacing.sm,
+  },
+  dangerSeparator: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.sm,
   },
   footer: {
     ...typography.caption,

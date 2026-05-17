@@ -17,6 +17,13 @@ interface FeedbackBannerProps {
   // "Desfazer" no caso success; ausente no caso error.
   undoLabel?: string;
   onUndo?: () => void;
+  // Quando presente, o banner inteiro vira tocável e o tap dispensa.
+  // O Pressable interno do "Desfazer" captura o gesto antes (padrão
+  // do responder system do RN), então tocar no botão de Desfazer
+  // ainda aciona `onUndo` e não dispara `onDismiss`. O timeout
+  // automático no MedicationProvider continua funcionando como
+  // fallback de segurança caso o usuário não toque.
+  onDismiss?: () => void;
 }
 
 // Componente reutilizado para feedback positivo ("X marcado como
@@ -28,6 +35,7 @@ export function FeedbackBanner({
   variant = 'success',
   undoLabel = 'Desfazer',
   onUndo,
+  onDismiss,
 }: FeedbackBannerProps) {
   useEffect(() => {
     AccessibilityInfo.announceForAccessibility(message);
@@ -47,12 +55,10 @@ export function FeedbackBanner({
         pressedBg: 'rgba(22, 101, 52, 0.12)',
       };
 
-  return (
-    <View
-      accessibilityRole="alert"
-      accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : 'none'}
-      style={[styles.banner, { backgroundColor: palette.background }]}
-    >
+  const dismissable = onDismiss != null;
+
+  const inner = (
+    <>
       <Text style={[styles.message, { color: palette.text }]}>{message}</Text>
       {onUndo ? (
         <Pressable
@@ -70,6 +76,34 @@ export function FeedbackBanner({
           </Text>
         </Pressable>
       ) : null}
+    </>
+  );
+
+  if (dismissable) {
+    return (
+      <Pressable
+        accessibilityRole="alert"
+        accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : 'none'}
+        accessibilityHint="Toque para fechar esta mensagem."
+        onPress={onDismiss}
+        style={({ pressed }) => [
+          styles.banner,
+          { backgroundColor: palette.background },
+          pressed && styles.bannerPressed,
+        ]}
+      >
+        {inner}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View
+      accessibilityRole="alert"
+      accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : 'none'}
+      style={[styles.banner, { backgroundColor: palette.background }]}
+    >
+      {inner}
     </View>
   );
 }
@@ -86,6 +120,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
+  },
+  bannerPressed: {
+    opacity: 0.85,
   },
   message: {
     ...typography.bodyStrong,

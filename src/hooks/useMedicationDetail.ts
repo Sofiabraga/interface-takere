@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import {
+  LastCorrectedAction,
   LastTakenAction,
   useMedicationContext,
 } from '../contexts/MedicationProvider';
@@ -11,9 +12,13 @@ import {
 export interface UseMedicationDetailResult {
   detail: MedicationDetailView | null;
   lastTaken: LastTakenAction | null;
+  lastCorrected: LastCorrectedAction | null;
   actionError: string | null;
   markAsTaken: (logId: string) => Promise<void>;
   undoLastTaken: () => Promise<void>;
+  correctTakenLog: (logId: string) => Promise<void>;
+  dismissFeedback: () => void;
+  dismissCorrected: () => void;
   dismissActionError: () => void;
 }
 
@@ -23,9 +28,13 @@ export function useMedicationDetail(logId: string): UseMedicationDetailResult {
     medications,
     schedules,
     lastTaken,
+    lastCorrected,
     actionError,
     markAsTaken,
     undoLastTaken,
+    correctTakenLog,
+    dismissFeedback,
+    dismissCorrected,
     dismissActionError,
   } = useMedicationContext();
 
@@ -42,9 +51,13 @@ export function useMedicationDetail(logId: string): UseMedicationDetailResult {
   return {
     detail,
     lastTaken,
+    lastCorrected,
     actionError,
     markAsTaken,
     undoLastTaken,
+    correctTakenLog,
+    dismissFeedback,
+    dismissCorrected,
     dismissActionError,
   };
 }

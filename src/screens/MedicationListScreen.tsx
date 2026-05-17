@@ -22,12 +22,15 @@ export function MedicationListScreen() {
   return (
     <ScreenContainer>
       <AppHeader
-        title="Medicamentos de hoje"
-        subtitle="Toque em um medicamento para ver os detalhes."
+        title="Agenda completa de hoje"
+        subtitle="Veja todos os medicamentos do dia e filtre por status. Toque em um item para abrir os detalhes."
         onBack={() => navigation.goBack()}
       />
 
-      <MedicationSummaryCard summary={summary} />
+      <MedicationSummaryCard
+        summary={summary}
+        note="Considera todos os medicamentos de hoje, independente do filtro selecionado."
+      />
 
       <StatusFilterTabs value={filter} onChange={setFilter} />
 

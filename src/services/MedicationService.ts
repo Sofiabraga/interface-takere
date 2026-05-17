@@ -13,6 +13,12 @@ export interface TodayMedicationView {
   id: string;
   medication: Medication;
   scheduledTime: string;
+  // ISO original do horário previsto. Mantido aqui (além do
+  // scheduledTime já formatado) para que componentes possam calcular
+  // distância até "agora" sem reparsar string HH:MM e sem reimportar
+  // a regra de fuso. Sempre em UTC (vem do timestamptz do Postgres);
+  // `new Date(scheduledIso)` no cliente devolve em horário local.
+  scheduledIso: string;
   status: MedicationStatus;
 }
 
@@ -34,6 +40,7 @@ export interface MedicationDetailView {
   id: string;
   medication: Medication;
   scheduledTime: string;
+  scheduledIso: string;
   takenAtTime?: string;
   status: MedicationStatus;
 }
@@ -214,6 +221,7 @@ function joinLog(
     id: log.id,
     medication,
     scheduledTime: formatScheduledTime(log.scheduledFor),
+    scheduledIso: log.scheduledFor,
     status: log.status,
   };
 }
@@ -310,6 +318,7 @@ export const MedicationService = {
       id: log.id,
       medication,
       scheduledTime: formatScheduledTime(log.scheduledFor),
+      scheduledIso: log.scheduledFor,
       takenAtTime: log.takenAt ? formatScheduledTime(log.takenAt) : undefined,
       status: log.status,
     };

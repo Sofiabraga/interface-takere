@@ -25,22 +25,37 @@ export interface LastTakenAction {
   medicationName: string;
 }
 
+// Feedback exibido após "Corrigir registro" — banner verde discreto,
+// sem botão "Desfazer". A confirmação prévia via Alert na tela de
+// Detail já protege contra acidente; expor undo aqui criaria
+// correção-em-cascata sem ganho real (o usuário pode simplesmente
+// marcar como tomado de novo). Linguagem: "corrigido" em vez de
+// "removido" — o registro não é destruído, volta ao status anterior.
+export interface LastCorrectedAction {
+  medicationName: string;
+}
+
 interface MedicationContextValue {
   patientId: string | null;
   logs: MedicationLog[];
   medications: Medication[];
   schedules: MedicationSchedule[];
   lastTaken: LastTakenAction | null;
+  lastCorrected: LastCorrectedAction | null;
   // Mensagem amigável, exposta pelo provider, mostrada nas telas via
   // FeedbackBanner com variant='error'. Tem prioridade sobre o
-  // banner de sucesso (lastTaken) quando ambos existirem.
+  // banner de sucesso (lastTaken/lastCorrected) quando ambos existirem.
   actionError: string | null;
   isLoading: boolean;
   error: string | null;
   reload: () => void;
   markAsTaken: (logId: string) => Promise<void>;
   undoLastTaken: () => Promise<void>;
+  // Reverte um log já 'taken' para 'pending'/'late' (calculado por
+  // scheduledFor vs agora) e limpa takenAt. Confirmação fica na tela.
+  correctTakenLog: (logId: string) => Promise<void>;
   dismissFeedback: () => void;
+  dismissCorrected: () => void;
   dismissActionError: () => void;
 }
 
@@ -74,10 +89,12 @@ export function MedicationProvider({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastTaken, setLastTaken] = useState<LastTakenAction | null>(null);
+  const [lastCorrected, setLastCorrected] = useState<LastCorrectedAction | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const previousLogRef = useRef<MedicationLog | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const correctedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Cada chamada de load incrementa o token e o then/catch verifica
   // se ainda é o token corrente — assim duas trocas rápidas de
@@ -115,6 +132,13 @@ export function MedicationProvider({
     }
   }, []);
 
+  const clearCorrectedTimer = useCallback(() => {
+    if (correctedTimerRef.current !== null) {
+      clearTimeout(correctedTimerRef.current);
+      correctedTimerRef.current = null;
+    }
+  }, []);
+
   const clearActionErrorTimer = useCallback(() => {
     if (errorTimerRef.current !== null) {
       clearTimeout(errorTimerRef.current);
@@ -131,6 +155,15 @@ export function MedicationProvider({
       feedbackTimerRef.current = null;
     }, FEEDBACK_DURATION_MS);
   }, [clearFeedbackTimer]);
+
+  const armCorrectedTimer = useCallback(() => {
+    clearCorrectedTimer();
+    correctedTimerRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
+      setLastCorrected(null);
+      correctedTimerRef.current = null;
+    }, FEEDBACK_DURATION_MS);
+  }, [clearCorrectedTimer]);
 
   const showActionError = useCallback(() => {
     setActionError(ACTION_ERROR_MESSAGE);
@@ -149,12 +182,14 @@ export function MedicationProvider({
     setError(null);
     setIsLoading(false);
     setLastTaken(null);
+    setLastCorrected(null);
     setActionError(null);
     previousLogRef.current = null;
     ongoingOpsRef.current.clear();
     clearFeedbackTimer();
+    clearCorrectedTimer();
     clearActionErrorTimer();
-  }, [clearFeedbackTimer, clearActionErrorTimer]);
+  }, [clearFeedbackTimer, clearCorrectedTimer, clearActionErrorTimer]);
 
   const load = useCallback(
     (targetPatientId: string) => {
@@ -257,6 +292,10 @@ export function MedicationProvider({
         prev.map((log) => (log.id === logId ? optimistic : log)),
       );
       setLastTaken({ logId, medicationName });
+      // Marcar como tomado anula um feedback de correção anterior —
+      // os dois banners verdes não devem competir pelo mesmo slot.
+      setLastCorrected(null);
+      clearCorrectedTimer();
       setActionError(null);
       clearActionErrorTimer();
       armFeedbackTimer();
@@ -297,6 +336,7 @@ export function MedicationProvider({
       resolvedRepository,
       armFeedbackTimer,
       clearFeedbackTimer,
+      clearCorrectedTimer,
       clearActionErrorTimer,
       showActionError,
       trackOp,
@@ -382,11 +422,101 @@ export function MedicationProvider({
     trackOp,
   ]);
 
+  // "Corrigir registro" — voltar um log já 'taken' para 'pending' ou
+  // 'late' (de acordo com scheduledFor vs agora), limpando takenAt.
+  // Diferente de undoLastTaken, que só atua sobre o ÚLTIMO mark via
+  // previousLogRef, esta ação aceita qualquer log 'taken' do dia.
+  //
+  // Optimistic + persist + rollback, mesmo padrão de markAsTaken. O
+  // banner de sucesso é separado (lastCorrected) e não traz Desfazer
+  // — a confirmação prévia via Alert na tela já protege, e oferecer
+  // "Desfazer da correção" criaria correção em cascata sem ganho real
+  // (o usuário pode tocar "Marcar como tomado" de novo).
+  const correctTakenLog = useCallback(
+    async (logId: string): Promise<void> => {
+      // Dedup contra mark/undo/correct em voo para o mesmo log.
+      if (ongoingOpsRef.current.has(logId)) return;
+
+      const target = logs.find((log) => log.id === logId);
+      if (!target || target.status !== 'taken') return;
+
+      const medicationName = findMedicationName(logId);
+      if (!medicationName) return;
+
+      const previous: MedicationLog = { ...target };
+      // Recalcula em tempo real: se o horário previsto já passou,
+      // volta como 'late'; se ainda não chegou, volta como 'pending'.
+      const scheduledMs = new Date(target.scheduledFor).getTime();
+      const recomputedStatus: MedicationLog['status'] =
+        scheduledMs <= Date.now() ? 'late' : 'pending';
+      const optimistic: MedicationLog = {
+        ...target,
+        status: recomputedStatus,
+        takenAt: undefined,
+      };
+
+      setLogs((prev) =>
+        prev.map((log) => (log.id === logId ? optimistic : log)),
+      );
+      // Limpa qualquer feedback anterior conflitante.
+      setLastTaken(null);
+      previousLogRef.current = null;
+      clearFeedbackTimer();
+      setActionError(null);
+      clearActionErrorTimer();
+      setLastCorrected({ medicationName });
+      armCorrectedTimer();
+
+      const op = (async () => {
+        try {
+          const persisted = await resolvedRepository.restoreLog(optimistic);
+          if (!mountedRef.current) return;
+          if (!persisted) {
+            throw new Error('Update retornou vazio (RLS ou id inválido).');
+          }
+          setLogs((prev) =>
+            prev.map((log) => (log.id === logId ? persisted : log)),
+          );
+        } catch (err) {
+          if (!mountedRef.current) return;
+          if (__DEV__) {
+            console.warn('[MedicationProvider] correctTakenLog falhou', err);
+          }
+          setLogs((prev) =>
+            prev.map((log) => (log.id === logId ? previous : log)),
+          );
+          setLastCorrected(null);
+          clearCorrectedTimer();
+          showActionError();
+        }
+      })();
+
+      trackOp(logId, op);
+      await op;
+    },
+    [
+      logs,
+      findMedicationName,
+      resolvedRepository,
+      armCorrectedTimer,
+      clearCorrectedTimer,
+      clearFeedbackTimer,
+      clearActionErrorTimer,
+      showActionError,
+      trackOp,
+    ],
+  );
+
   const dismissFeedback = useCallback(() => {
     setLastTaken(null);
     previousLogRef.current = null;
     clearFeedbackTimer();
   }, [clearFeedbackTimer]);
+
+  const dismissCorrected = useCallback(() => {
+    setLastCorrected(null);
+    clearCorrectedTimer();
+  }, [clearCorrectedTimer]);
 
   const dismissActionError = useCallback(() => {
     clearActionErrorTimer();
@@ -396,9 +526,10 @@ export function MedicationProvider({
   useEffect(() => {
     return () => {
       clearFeedbackTimer();
+      clearCorrectedTimer();
       clearActionErrorTimer();
     };
-  }, [clearFeedbackTimer, clearActionErrorTimer]);
+  }, [clearFeedbackTimer, clearCorrectedTimer, clearActionErrorTimer]);
 
   const value = useMemo<MedicationContextValue>(
     () => ({
@@ -407,13 +538,16 @@ export function MedicationProvider({
       medications,
       schedules,
       lastTaken,
+      lastCorrected,
       actionError,
       isLoading,
       error,
       reload,
       markAsTaken,
       undoLastTaken,
+      correctTakenLog,
       dismissFeedback,
+      dismissCorrected,
       dismissActionError,
     }),
     [
@@ -422,13 +556,16 @@ export function MedicationProvider({
       medications,
       schedules,
       lastTaken,
+      lastCorrected,
       actionError,
       isLoading,
       error,
       reload,
       markAsTaken,
       undoLastTaken,
+      correctTakenLog,
       dismissFeedback,
+      dismissCorrected,
       dismissActionError,
     ],
   );
