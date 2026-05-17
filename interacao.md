@@ -1697,7 +1697,6 @@ O último bloco contém 9 dias para fechar exatamente 30 dias sem criar uma quin
 **Cálculo dos percentuais:**  
 O percentual é calculado como:
 
-```txt
 medicamentos registrados / medicamentos previstos * 100
 
 ---
@@ -1852,3 +1851,149 @@ Do ponto de vista do SUS, mostrar a conta logada, o total de medicamentos acompa
 - Botões desabilitados de configuração poderiam parecer funcionalidades quebradas.
 - Funcionalidades como “falar com médico” poderiam deslocar o escopo do app para comunicação clínica, o que não faz parte do TCC.
 - Streaks/troféus poderiam infantilizar a experiência ou gerar sensação de cobrança.
+
+---
+
+### Interação C26
+
+**Categoria:**  
+UX / Acessibilidade / Consistência visual / Polimento de interface / Revisão pré-avaliação
+
+**Tela ou funcionalidade:**  
+Revisão geral de usabilidade, acessibilidade e consistência visual antes da avaliação do TCC.
+
+**Objetivo do prompt:**  
+Realizar uma revisão geral da interface antes da avaliação do TCC, buscando melhorar clareza, legibilidade, acessibilidade, consistência visual, feedback e facilidade de uso, sem alterar o escopo funcional principal do app.
+
+**Prompt enviado:**  
+Foi solicitado que Claude revisasse a interface como um todo, considerando LoginScreen, HomeScreen, MedicationListScreen, MedicationDetailScreen, HistoryScreen, ProfileMenu e componentes reutilizáveis. O pedido enfatizou melhorias pequenas e seguras relacionadas a hierarquia visual, contraste, tamanho dos textos, espaçamento, clareza dos rótulos, prevenção de erro, feedback após ações, estados vazios, touch targets, legibilidade e adequação a um público amplo.
+
+**Resumo da resposta do Claude:**  
+Claude realizou uma revisão geral de UX, acessibilidade e consistência visual. Foram modificados 10 arquivos, sem criação de novos arquivos, sem novas dependências, sem mudanças em schema ou scripts SQL, sem alteração no `MedicationService` e sem acesso ao Supabase a partir das telas.
+
+A principal correção visual foi no token `textMuted`, que passou de `#94A3B8` para `#64748B`, melhorando o contraste sobre fundo branco e aproximando o texto secundário dos critérios de acessibilidade. Também foram feitos ajustes em componentes interativos, como `MedicationListItem`, `AppHeader`, `PrimaryButton`, `FeedbackBanner` e `StatusFilterTabs`, visando melhorar áreas de toque, acessibilidade por leitor de tela e clareza das consequências de ações.
+
+O `EmptyState` foi refinado para dar mais destaque ao título, usando `sectionTitle`, e a `HistoryScreen` recebeu ajuste na hierarquia visual do card do dia selecionado. A `LoginScreen` recebeu melhorias de acessibilidade nos botões de perfis demo e no botão “Entrar”, com hints mais claros para leitores de tela.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A interação foi bem controlada e focada em melhorias incrementais. Ainda assim, algumas melhorias foram identificadas e deixadas como recomendações futuras por envolverem decisões mais opinativas ou risco de aumentar escopo, como revisão de copy na MedicationDetailScreen, ajuste de labels menores, exibição de indicador de scroll e revisão mais profunda de componentes como StatusLegend.
+
+**Evidência:**  
+Arquivos modificados:
+- `src/theme/colors.ts`
+- `src/components/MedicationListItem.tsx`
+- `src/components/AppHeader.tsx`
+- `src/components/EmptyState.tsx`
+- `src/components/StatusBadge.tsx`
+- `src/components/PrimaryButton.tsx`
+- `src/components/FeedbackBanner.tsx`
+- `src/components/StatusFilterTabs.tsx`
+- `src/screens/LoginScreen.tsx`
+- `src/screens/HistoryScreen.tsx`
+
+Arquivos criados:
+- Nenhum.
+
+Dependências:
+- Nenhuma dependência nova foi adicionada.
+
+Schema/Supabase:
+- Nenhum schema ou script SQL foi alterado.
+- Nenhuma tela passou a acessar Supabase diretamente.
+
+Typecheck:
+- `npm run typecheck` passa sem erros.
+
+**Problemas encontrados:**  
+- `colors.textMuted` tinha contraste baixo sobre fundo branco, podendo prejudicar leitura de legendas, placeholders e textos auxiliares.
+- O chevron `›` em `MedicationListItem` poderia ser lido por VoiceOver/TalkBack como “maior que”, poluindo a leitura do item.
+- `MedicationListItem` não garantia altura mínima para alvo de toque confortável.
+- O botão de voltar no `AppHeader` tinha área horizontal estreita.
+- `PrimaryButton` não permitia descrever a consequência da ação para tecnologias assistivas.
+- O botão “Desfazer” no `FeedbackBanner` não tinha `accessibilityHint`.
+- `StatusBadge` possuía label acessível, mas não estava agrupado como um único nó textual.
+- `StatusFilterTabs` usava fonte menor do que o ideal definido no projeto.
+- O título do `EmptyState` tinha pouca força visual.
+- O cabeçalho do dia selecionado na `HistoryScreen` não se destacava o suficiente.
+- Na `LoginScreen`, os botões de perfil demo preenchiam os campos, mas isso não era explicado claramente para leitores de tela.
+
+**Melhorias implementadas:**  
+- `textMuted` foi escurecido para melhorar contraste e legibilidade.
+- `MedicationListItem` passou a ter `minHeight: 56`, garantindo alvo de toque mais confortável.
+- O chevron decorativo foi ocultado de leitores de tela.
+- O botão de voltar no `AppHeader` ganhou área horizontal maior.
+- `EmptyState` passou a usar título com maior destaque visual.
+- `StatusBadge` passou a ser agrupado como texto acessível único.
+- `PrimaryButton` ganhou prop opcional `accessibilityHint`.
+- O botão “Desfazer” passou a explicar que reverte a última ação de marcar como tomado.
+- `StatusFilterTabs` teve fonte aumentada e hints descritivos em abas não selecionadas.
+- Os botões de perfil demo na `LoginScreen` passaram a explicar que preenchem e-mail e senha, mas ainda exigem tocar em “Entrar”.
+- O botão “Entrar” passou a ter hint contextual quando habilitado ou desabilitado.
+- O cabeçalho do dia selecionado na `HistoryScreen` ganhou maior destaque visual.
+
+**Melhorias identificadas, mas não implementadas:**  
+- Revisar textos da `MedicationDetailScreen`, como “Registro da tomada” e “Dose cadastrada”, para deixá-los mais naturais.
+- Aumentar labels de 14px em campos da `MedicationDetailScreen`, o que exigiria revisar densidade vertical dos cards.
+- Avaliar remoção do subtítulo da HomeScreen por possível redundância.
+- Melhorar contraste do botão desabilitado com token específico.
+- Tornar `StatusLegend` opcional ou colapsável, pois aparece em mais de uma tela.
+- Avaliar exibição de indicador de scroll no `ScreenContainer`.
+- Reforçar visualmente a borda do avatar do perfil para usuários com baixa visão.
+
+**Relação com heurísticas de Nielsen:**  
+- **Visibilidade do estado do sistema:** hints no botão “Entrar” e no botão “Desfazer” tornam estados e consequências mais claros para leitores de tela.
+- **Correspondência entre sistema e mundo real:** os hints usam linguagem simples e natural em português.
+- **Controle e liberdade do usuário:** o `FeedbackBanner` explica melhor a função de desfazer, reforçando o controle do usuário sobre ações recentes.
+- **Consistência e padrões:** `EmptyState` e o card do dia na `HistoryScreen` passaram a usar hierarquia tipográfica mais coerente com o restante do app.
+- **Prevenção de erros:** o botão “Entrar” desabilitado agora explica o que falta preencher.
+- **Reconhecimento em vez de memorização:** filtros e botões de perfis demo explicam melhor suas ações.
+- **Flexibilidade e eficiência de uso:** o contraste maior melhora legibilidade em diferentes condições de uso.
+- **Design estético e minimalista:** as melhorias foram feitas sem adicionar novos elementos visuais, preservando a limpeza da interface.
+
+**Impacto esperado na avaliação SUS:**  
+As mudanças podem contribuir positivamente para a percepção de facilidade de uso, clareza, confiança e consistência. Alvos de toque maiores reduzem erros de interação, textos mais legíveis reduzem esforço visual, e hints mais claros ajudam usuários que dependem de leitor de tela ou que têm dúvidas sobre a consequência das ações.
+
+Esses ajustes podem impactar especialmente itens do SUS relacionados a facilidade de uso, necessidade de ajuda, aprendizado rápido e percepção de que o sistema é bem integrado.
+
+**Checklist de validação local:**  
+- Rodar `npm run typecheck`.
+- Abrir a LoginScreen.
+- Tocar em “Entrar como Maria” e confirmar que os campos são preenchidos.
+- Confirmar que o botão “Entrar” funciona normalmente.
+- Testar campos vazios e verificar que o botão desabilitado possui hint adequado com leitor de tela.
+- Testar erro de login e confirmar mensagem amigável.
+- Abrir a Home e confirmar que o avatar abre o ProfileMenu.
+- Marcar medicamento como tomado e confirmar o `FeedbackBanner`.
+- Confirmar que o botão “Desfazer” tem leitura acessível adequada.
+- Navegar para agenda e testar filtros.
+- Confirmar que os itens da lista continuam clicáveis e com área confortável.
+- Confirmar que o chevron não polui a leitura por VoiceOver/TalkBack.
+- Abrir detalhe e testar botão “Voltar”.
+- Confirmar que o `StatusBadge` é lido como “Status: ...”.
+- Abrir histórico e confirmar destaque visual do dia selecionado.
+- Testar troca de dia no histórico.
+- Conferir se textos com `textMuted` ficaram mais legíveis.
+- Testar em tela pequena.
+- Testar com fonte do sistema aumentada.
+- Confirmar que Home, List, Detail, History, ProfileMenu, login/logout, marcar como tomado e desfazer continuam funcionando.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque representa uma etapa de refinamento pré-avaliação, focada em qualidade de interação e acessibilidade, e não em adição de funcionalidades. Claude foi usado para identificar problemas pequenos, mas importantes, que poderiam afetar a avaliação com usuários e a análise heurística.
+
+As melhorias mostram preocupação com princípios de IHC, como legibilidade, feedback, prevenção de erro, consistência e acessibilidade básica. Também reforçam a importância de revisar interfaces geradas ao longo de várias interações para garantir unidade visual e coerência antes da avaliação.
+
+**Possíveis riscos ou limitações:**  
+- As melhorias foram avaliadas por inspeção e ainda precisam ser validadas com usuários.
+- Algumas decisões de copy e densidade visual foram deixadas para revisão futura.
+- Ainda não há testes automatizados de acessibilidade.
+- Hints de acessibilidade ajudam leitores de tela, mas precisam ser testados em dispositivos reais.
+- A interface pode precisar de ajustes adicionais após a revisão heurística formal.

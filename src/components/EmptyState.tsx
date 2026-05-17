@@ -1,5 +1,5 @@
 import { StyleSheet, Text } from 'react-native';
-import { colors, typography } from '../theme';
+import { colors, spacing, typography } from '../theme';
 import { Card } from './Card';
 
 interface EmptyStateProps {
@@ -20,11 +20,12 @@ export function EmptyState({ title, message }: EmptyStateProps) {
 
 const styles = StyleSheet.create({
   title: {
-    ...typography.bodyStrong,
+    ...typography.sectionTitle,
     color: colors.textPrimary,
   },
   message: {
     ...typography.body,
     color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
 });

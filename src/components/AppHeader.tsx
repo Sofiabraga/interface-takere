@@ -39,9 +39,9 @@ const styles = StyleSheet.create({
   backButton: {
     minHeight: 44,
     alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    marginLeft: -spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginLeft: -spacing.md,
     borderRadius: radius.sm,
     justifyContent: 'center',
   },

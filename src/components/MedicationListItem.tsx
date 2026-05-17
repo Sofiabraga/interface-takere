@@ -31,7 +31,15 @@ export function MedicationListItem({
         <Text style={styles.dose}>{item.medication.dose}</Text>
       </View>
       <StatusBadge status={item.status} />
-      {interactive ? <Text style={styles.chevron}>›</Text> : null}
+      {interactive ? (
+        <Text
+          style={styles.chevron}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          ›
+        </Text>
+      ) : null}
     </>
   );
 
@@ -66,6 +74,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.md,
+    minHeight: 56,
   },
   rowWithDivider: {
     borderTopWidth: 1,

@@ -170,11 +170,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   dayWeekday: {
-    ...typography.bodyStrong,
+    ...typography.sectionTitle,
     color: colors.textPrimary,
   },
   dayDate: {
-    ...typography.caption,
+    ...typography.body,
     color: colors.textSecondary,
   },
   row: {

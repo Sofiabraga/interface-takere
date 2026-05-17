@@ -135,6 +135,11 @@ export function LoginScreen() {
                 label={isSubmitting ? 'Entrando…' : 'Entrar'}
                 onPress={handleSignIn}
                 disabled={!canSubmit}
+                accessibilityHint={
+                  canSubmit
+                    ? 'Acessa sua agenda de medicamentos.'
+                    : 'Preencha email e senha para continuar.'
+                }
               />
             </View>
           </Card>
@@ -151,6 +156,7 @@ export function LoginScreen() {
               variant="secondary"
               onPress={() => handlePickDemo(persona)}
               disabled={isSubmitting}
+              accessibilityHint="Preenche email e senha deste perfil. Toque em Entrar para acessar."
             />
           ))}
         </ScrollView>

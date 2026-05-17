@@ -31,6 +31,11 @@ export function StatusFilterTabs({ value, onChange }: StatusFilterTabsProps) {
             accessibilityRole="tab"
             accessibilityState={{ selected }}
             accessibilityLabel={option.label}
+            accessibilityHint={
+              selected
+                ? undefined
+                : `Filtra a lista pelo status ${option.label.toLowerCase()}.`
+            }
             style={({ pressed }) => [
               styles.tab,
               selected && styles.tabSelected,
@@ -76,7 +81,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
   },
   tabLabel: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     lineHeight: 22,
     color: colors.textPrimary,

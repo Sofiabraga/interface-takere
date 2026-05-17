@@ -9,7 +9,10 @@ export const colors = {
 
   textPrimary: '#0F172A',
   textSecondary: '#475569',
-  textMuted: '#94A3B8',
+  // textMuted é slate-500 (#64748B): contraste ~4.85:1 sobre branco,
+  // passa AA para texto normal e textos pequenos. Antes era slate-400
+  // (#94A3B8 → ~2.9:1), que falhava AA em legendas e placeholders.
+  textMuted: '#64748B',
   textOnPrimary: '#FFFFFF',
 
   border: '#E2E8F0',

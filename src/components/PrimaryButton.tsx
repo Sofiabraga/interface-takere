@@ -6,6 +6,10 @@ interface PrimaryButtonProps {
   onPress: () => void;
   variant?: 'primary' | 'secondary';
   disabled?: boolean;
+  // Frase curta que descreve o resultado do toque para leitores de
+  // tela ("Preenche email e senha automaticamente"). Não substitui o
+  // label; é lida em seguida pelo VoiceOver/TalkBack.
+  accessibilityHint?: string;
 }
 
 // Botão padrão do app. Cantos suavemente arredondados (radius.xl) dão
@@ -20,6 +24,7 @@ export function PrimaryButton({
   onPress,
   variant = 'primary',
   disabled = false,
+  accessibilityHint,
 }: PrimaryButtonProps) {
   const isSecondary = variant === 'secondary';
 
@@ -29,6 +34,7 @@ export function PrimaryButton({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.base,

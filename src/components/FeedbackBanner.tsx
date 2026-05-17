@@ -58,6 +58,7 @@ export function FeedbackBanner({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={undoLabel}
+          accessibilityHint="Reverte a última ação de marcar como tomado."
           onPress={onUndo}
           style={({ pressed }) => [
             styles.undoButton,

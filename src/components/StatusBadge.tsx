@@ -24,6 +24,8 @@ export function StatusBadge({ status }: StatusBadgeProps) {
 
   return (
     <View
+      accessible
+      accessibilityRole="text"
       accessibilityLabel={`Status: ${label}`}
       style={[styles.badge, { backgroundColor: background }]}
     >
