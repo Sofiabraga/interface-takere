@@ -2546,3 +2546,105 @@ Do ponto de vista metodológico, a combinação de tarefas práticas, SUS e perg
 - O SUS mede percepção de usabilidade, não eficácia clínica.
 - O roteiro precisa evitar ajudar demais o participante, para não mascarar problemas reais de interface.
 - A tarefa de histórico deve ser ajustada para refletir exatamente os termos atuais da interface.
+
+---
+
+### Interação C32
+
+**Categoria:**  
+Planejamento de avaliação / Teste piloto / Metodologia / Protocolo de pesquisa
+
+**Tela ou funcionalidade:**  
+Planejamento do teste piloto da avaliação com participantes.
+
+**Objetivo do prompt:**  
+Planejar um teste piloto com 1 participante antes da avaliação oficial, com o objetivo de validar o procedimento de avaliação, o roteiro, as tarefas, o ambiente técnico, o reset do cenário demo e os instrumentos de coleta.
+
+**Prompt enviado:**  
+Foi solicitado que Claude criasse um plano prático para conduzir um teste piloto da avaliação, incluindo objetivo, checklist antes da sessão, roteiro resumido, modo de condução das tarefas, pontos a observar, validação dos Google Forms, critérios para decidir se o protocolo está pronto, ajustes possíveis após o piloto e um modelo de registro em Markdown.
+
+**Resumo da resposta do Claude:**  
+Claude definiu que o objetivo do piloto é validar o procedimento de avaliação, e não avaliar oficialmente a interface. O piloto deve verificar se o protocolo, o roteiro, o ambiente técnico, o app no celular, o Supabase, o `reset_demo.sql` e os Google Forms funcionam de ponta a ponta antes da avaliação oficial.
+
+Foi criado um checklist pré-piloto com preparação técnica, material e logística. Entre os itens técnicos estão: celular físico carregado, Expo Go instalado e testado, app abrindo corretamente, login com Maria funcionando, `reset_demo.sql` executado antes da sessão, conexão de internet estável, modo “não perturbe” ativado e brilho da tela adequado.
+
+Também foi sugerido um roteiro resumido de sessão com duração-alvo entre 45 e 60 minutos. A sessão contempla acolhimento, perfil rápido, entrega do celular, execução das tarefas com think-aloud, preenchimento do SUS, entrevista curta e encerramento.
+
+Claude recomendou conduzir as tarefas lendo os enunciados exatamente como estarão na avaliação oficial, evitando improvisos. Também recomendou não dar dicas imediatamente, esperar de 60 a 90 segundos antes de oferecer ajuda mínima, cronometrar as tarefas e registrar se foram concluídas sem ajuda, com ajuda ou não concluídas.
+
+Foram definidos critérios para decidir se o protocolo está pronto. O protocolo é considerado aprovado se nenhuma tarefa precisar ser reformulada, se não houver bug bloqueante, se a sessão durar entre 40 e 70 minutos, se o SUS for preenchido sem dúvidas, se o pesquisador conseguir observar e anotar simultaneamente e se nenhuma tarefa for pulada por problema técnico.
+
+Também foi gerado um modelo de registro em Markdown para documentar o piloto, incluindo identificação, duração, ambiente técnico, execução das tarefas, problemas encontrados, tarefas confusas, falas relevantes, SUS, ajustes necessários e decisão final.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A resposta é útil para organizar a aplicação do piloto, mas precisa ser adaptada à realidade prática do TCC. A duração estimada de 45 a 60 minutos pode ser um pouco alta para uma sessão simples; caso o piloto mostre cansaço, algumas tarefas podem ser encurtadas ou tratadas como opcionais. O piloto também não deve ser confundido com avaliação oficial, a menos que isso seja justificado posteriormente.
+
+**Evidência:**  
+Nenhum arquivo foi criado ou modificado nesta interação.
+
+Entregas conceituais geradas:
+- objetivo do piloto;
+- checklist antes do piloto;
+- roteiro resumido da sessão;
+- orientações para condução das tarefas;
+- pontos a observar durante o piloto;
+- verificação dos Google Forms;
+- critérios para aprovar o protocolo;
+- possíveis ajustes após o piloto;
+- checklist pós-piloto;
+- modelo de registro em Markdown;
+- sinais para seguir para a avaliação oficial.
+
+**Checklist antes do piloto:**  
+- Rodar `reset_demo.sql` no Supabase no mesmo dia.
+- Abrir o app no celular físico.
+- Confirmar que o app faz login com Maria.
+- Confirmar que Home, agenda, detalhe e histórico carregam.
+- Conferir conexão com internet.
+- Conferir bateria do celular.
+- Ativar modo “não perturbe”.
+- Abrir o Forms do participante.
+- Abrir o Forms de observação do pesquisador.
+- Ter o roteiro de tarefas disponível.
+- Separar código do participante piloto.
+- Explicar que os dados são fictícios.
+- Explicar que o app, e não o participante, está sendo avaliado.
+
+**Critérios para aprovar o protocolo:**  
+- Todas as tarefas foram compreendidas sem reformulação relevante.
+- Nenhum bug bloqueante apareceu.
+- A sessão ficou em tempo aceitável.
+- O participante conseguiu responder o SUS sem dúvida.
+- O pesquisador conseguiu observar e anotar.
+- Os Forms funcionaram adequadamente.
+- O cenário do Supabase estava coerente com as tarefas.
+
+**Possíveis ajustes após o piloto:**  
+- Reescrever enunciados de tarefas.
+- Reordenar tarefas.
+- Reduzir tarefas se a sessão ficar longa.
+- Ajustar perguntas abertas.
+- Melhorar o Forms de observação.
+- Corrigir bug bloqueante no app, se houver.
+- Rodar novo piloto se houver mudança grande.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é relevante porque transforma o protocolo de avaliação em um procedimento testável. O piloto reduz riscos antes da avaliação oficial e ajuda a verificar se o pesquisador consegue conduzir a sessão, observar o participante e registrar dados sem interferir demais.
+
+Do ponto de vista metodológico, o piloto fortalece a validade do procedimento, pois permite corrigir problemas de roteiro, tarefas e instrumentos antes da coleta principal. Isso também pode ser descrito no TCC como uma etapa de refinamento do método de avaliação.
+
+**Possíveis riscos ou limitações:**  
+- O piloto pode revelar que o protocolo está longo demais.
+- O participante piloto pode ter perfil muito diferente dos participantes oficiais.
+- O pesquisador pode acabar ajudando demais durante as tarefas.
+- Problemas técnicos com Expo Go, Supabase ou internet podem atrapalhar a sessão.
+- Se houver mudança grande depois do piloto, pode ser necessário realizar um novo piloto.
