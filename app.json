@@ -1,14 +1,16 @@
 {
   "expo": {
-    "name": "Takere mHealth",
+    "name": "Takere Demo",
     "slug": "takere-mhealth",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.takere.demo"
     },
     "android": {
+      "package": "com.takere.demo",
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       }

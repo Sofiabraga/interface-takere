@@ -2337,3 +2337,72 @@ Do ponto de vista do TCC, a interação mostra uma decisão equilibrada entre us
 - O status de destino é recalculado usando `Date.now()` do dispositivo, podendo ser afetado por relógio incorreto.
 - A correção limpa o banner de “Desfazer” se ele ainda estiver ativo, pois a ação confirmada tem prioridade sobre o feedback temporário.
 - A ausência de auditoria seria inadequada para um sistema clínico real, mas é aceitável no escopo acadêmico e demonstrativo do app.
+
+---
+
+### Interação C30
+
+**Categoria:**  
+QA / Demonstração em celular / Expo / EAS Build / Documentação / Preparação para avaliação
+
+**Tela ou funcionalidade:**  
+Preparação do app para execução em celular físico e demonstração do TCC.
+
+**Objetivo do prompt:**  
+Preparar o app para demonstração e avaliação em celular real, garantindo que ele funcione de forma confiável, visualmente adequada e sem regressões. A etapa deveria revisar execução via Expo Go, possibilidade de APK com EAS Build, variáveis de ambiente, documentação e checklist de teste em dispositivo físico.
+
+**Prompt enviado:**  
+Foi solicitado que Claude revisasse a preparação do app para rodar em celular físico, incluindo instruções para Expo Go, avaliação de EAS Build, configuração de `app.json`, variáveis de ambiente, README e checklist funcional completo. O pedido deixou claro que a etapa não deveria criar novas funcionalidades, alterar Supabase, schema, reset ou lógica do app.
+
+**Resumo da resposta do Claude:**  
+Claude realizou uma etapa de preparação para demonstração no dispositivo. O `app.json` foi atualizado com `android.package`, `ios.bundleIdentifier` e renomeação do app para “Takere Demo”, deixando mais claro que se trata de um aplicativo acadêmico/de demonstração.
+
+Também foi criado um `eas.json` mínimo com perfil `preview`, usando `distribution: internal` e `buildType: apk`, possibilitando gerar um APK Android instalável sem passar por loja. O `README.md` foi atualizado com uma nova seção “Rodar no celular físico”, descrevendo dois caminhos: Expo Go e EAS Build APK.
+
+Claude recomendou usar Expo Go para a banca, por ser mais simples, rápido e confiável em uma demonstração presencial com a máquina do desenvolvedor disponível. O EAS Build foi indicado apenas como alternativa caso seja necessário um APK instalável ou caso o avaliador precise testar sem depender do Metro. Para iPhone sem conta Apple Developer, a recomendação foi manter Expo Go.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+A etapa deixou o app mais preparado para demonstração, mas ainda depende de validação real no celular que será usado. O caminho com Expo Go depende de rede entre computador e celular, e o caminho com EAS Build exige configuração de conta Expo e variáveis de ambiente no ambiente de build. O app ainda não possui ícone/splash customizado, e isso foi registrado como limitação aceitável para uma demonstração acadêmica.
+
+**Evidência:**  
+Arquivos criados:
+- `eas.json`
+
+Arquivos modificados:
+- `app.json`
+- `README.md`
+
+Arquivos não modificados:
+- `schema.sql`
+- `reset_demo.sql`
+- `reset_logs.sql`
+- `.env`
+- `.env.example`
+- `.gitignore`
+- `package.json`
+- arquivos em `src/`
+
+Dependências:
+- Nenhuma dependência nova foi adicionada.
+
+Typecheck:
+- TypeScript passa sem erros.
+
+**Recomendação de execução:**  
+Claude recomendou usar **Expo Go** como caminho principal para a banca/avaliação, por funcionar em Android e iOS sem conta paga e por ser o caminho já usado no desenvolvimento. Para demonstração presencial, com a máquina ligada, é o caminho mais simples.
+
+O **EAS Build APK** foi recomendado apenas como fallback ou alternativa caso seja necessário um app instalável, especialmente em Android. Para iOS sem Apple Developer Account, o uso de Expo Go foi considerado o caminho viável no momento.
+
+**Passos para testar com Expo Go:**  
+```bash
+npm install --legacy-peer-deps
+npx expo start -c

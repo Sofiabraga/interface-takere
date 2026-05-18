@@ -56,6 +56,76 @@ Após mudar versões de qualquer dependência Expo: `npx expo install --fix`.
 
 ---
 
+## Rodar no celular físico
+
+Usado em sessões de avaliação heurística, SUS e na banca. Dois caminhos
+suportados — Expo Go para iteração rápida, EAS Build para um APK
+instalável que não depende do servidor Metro.
+
+### Caminho A — Expo Go (rápido, ideal para desenvolvimento)
+
+1. Instale o app **Expo Go** no celular (Android: Play Store; iOS: App
+   Store).
+2. Garanta que celular e computador estejam **na mesma rede Wi-Fi**.
+3. No computador, com o `.env` configurado:
+   ```bash
+   npx expo start -c
+   ```
+   `-c` limpa o cache do Metro — útil depois de mudar `.env` ou
+   `app.json`.
+4. Aponte a câmera (iOS) ou o leitor do Expo Go (Android) para o QR
+   code do terminal.
+5. Se o QR não conectar (rede corporativa, hotspot bloqueado), rode
+   `npx expo start --tunnel` — mais lento, mas funciona em qualquer
+   rede.
+
+**Limitações conscientes do Expo Go:** o app aparece dentro do Expo
+Go (não vira app próprio com ícone na home), depende do Metro rodando
+no computador durante a sessão e bloqueia plugins nativos extras.
+Suficiente para este TCC.
+
+### Caminho B — EAS Build (APK Android instalável para a banca)
+
+Útil quando o avaliador não vai instalar Expo Go ou quando você quer
+testar o app sem depender do Metro. **Apenas Android** — iOS
+exigiria conta paga no Apple Developer Program, fora do escopo desta
+fase.
+
+Pré-requisito único: conta gratuita em
+[expo.dev](https://expo.dev) e EAS CLI.
+
+```bash
+# 1. Instalar e logar (uma vez por máquina)
+npm install -g eas-cli
+eas login
+
+# 2. Inicializar o projeto no Expo (uma vez por repo)
+#    Isso preenche extra.eas.projectId no app.json.
+eas init
+
+# 3. Configurar variáveis de ambiente do build
+#    (substitua pelos valores reais do Supabase)
+eas env:create --environment preview \
+  --name EXPO_PUBLIC_SUPABASE_URL --value "https://...supabase.co"
+eas env:create --environment preview \
+  --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "sb_publishable_..."
+
+# 4. Gerar o APK de preview (~10–15 min na fila gratuita)
+eas build --profile preview --platform android
+```
+
+Ao terminar, o EAS devolve uma URL com o `.apk`. Baixe pelo celular
+e instale (Android pedirá permissão para "instalar de fonte
+desconhecida"). O perfil `preview` está configurado em
+[`eas.json`](./eas.json) como `distribution: internal` + `buildType:
+apk` — não publica em loja.
+
+> 🔒 **Variáveis no EAS Build.** Use apenas a `anon` / `publishable`
+> key (a mesma do `.env` local). A `service_role` **nunca** entra em
+> nenhum build — RLS no Supabase já isola os dados por usuário.
+
+---
+
 ## Variáveis de ambiente
 
 | Variável | Origem |
