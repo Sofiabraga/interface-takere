@@ -2406,3 +2406,143 @@ O **EAS Build APK** foi recomendado apenas como fallback ou alternativa caso sej
 ```bash
 npm install --legacy-peer-deps
 npx expo start -c
+
+---
+
+### Interação C31
+
+**Categoria:**  
+Avaliação com participantes / Protocolo de pesquisa / SUS / Tarefas práticas / Metodologia
+
+**Tela ou funcionalidade:**  
+Protocolo de avaliação da interface com participantes, usando tarefas práticas, questionário SUS e perguntas abertas.
+
+**Objetivo do prompt:**  
+Criar um protocolo de avaliação para o TCC, focado em usabilidade, clareza, facilidade de uso, compreensão dos fluxos principais e percepção geral da interface. A avaliação deveria ser apresentada como uma avaliação de interface, e não como avaliação clínica.
+
+**Prompt enviado:**  
+Foi solicitado que Claude elaborasse um protocolo completo de avaliação com participantes, incluindo objetivo da avaliação, perfil dos participantes, checklist de preparação, roteiro de introdução, tarefas práticas, métricas de observação, questionário SUS, perguntas abertas, estrutura sugerida para Google Forms, cuidados éticos e plano de análise dos resultados.
+
+**Resumo da resposta do Claude:**  
+Claude propôs um protocolo de avaliação para o app Takere, estruturado em 12 seções. O objetivo da avaliação foi definido como verificar se a interface é compreendida sem treinamento prévio, se os principais fluxos podem ser executados com pouca ou nenhuma ajuda, medir a percepção subjetiva de usabilidade por meio do SUS e coletar impressões qualitativas.
+
+Foi sugerido um perfil de participantes adultos, usuários cotidianos de smartphone, alfabetizados em português e com diferentes níveis de familiaridade tecnológica. A quantidade recomendada foi de 5 a 8 participantes, adequada para um estudo exploratório de TCC.
+
+O protocolo inclui um checklist pré-sessão para o pesquisador, com itens como rodar `reset_demo.sql`, abrir o app no celular de teste, confirmar login com Maria, verificar internet e bateria, preparar o formulário SUS e reforçar que os dados são fictícios.
+
+Também foi gerado um roteiro de introdução para ser lido ao participante. O texto explica que a avaliação é da interface, que o participante não está sendo testado, que os dados são fictícios, que o app não fornece orientação médica e que dúvidas ou dificuldades são úteis para o estudo.
+
+A proposta de avaliação contém oito tarefas práticas:
+1. entrar no app;
+2. identificar o próximo medicamento;
+3. registrar medicamento como tomado;
+4. desfazer uma ação;
+5. ver agenda completa do dia;
+6. corrigir registro pelo detalhe;
+7. consultar histórico;
+8. ver perfil e sair.
+
+Para cada tarefa, Claude definiu objetivo, instrução ao participante, pontos a observar, critério de sucesso e possíveis dificuldades.
+
+O protocolo também sugere registrar, durante as tarefas, se cada tarefa foi concluída sem ajuda, com ajuda ou não concluída, além de nível de ajuda, hesitações, erros de toque, dúvidas verbalizadas, comentários espontâneos, pontos positivos e tempo aproximado opcional.
+
+Claude incluiu os 10 itens do SUS em português, com escala de 1 a 5, e explicou o cálculo da pontuação: itens ímpares usam `resposta - 1`, itens pares usam `5 - resposta`, soma-se tudo e multiplica-se por 2,5, obtendo um resultado de 0 a 100.
+
+Também foram propostas perguntas abertas pós-teste, uma estrutura de Google Forms em seis seções, cuidados éticos e de escopo, e uma sugestão de análise dos resultados para o capítulo de avaliação do TCC.
+
+**Decisão tomada:**  
+Aceito com pequenas alterações.
+
+**Utilidade percebida:**  
+5
+
+**Retrabalho:**  
+Baixo
+
+**Problema ou limitação:**  
+O protocolo está bem estruturado e adequado para um estudo exploratório, mas ainda precisa ser revisado para pequenos ajustes antes da aplicação. Em especial, a tarefa de histórico menciona “blocos por período (manhã/tarde/noite)”, o que pode não corresponder exatamente à interface atual, que trabalha com resumo mensal por períodos/blocos e detalhes por dia. Também é recomendável conferir com o orientador se a versão em português do SUS utilizada está adequada ou se deve ser usada uma tradução validada específica.
+
+**Evidência:**  
+Nenhum arquivo foi criado ou modificado nesta interação.
+
+Entregas conceituais geradas:
+- objetivo da avaliação;
+- perfil dos participantes;
+- checklist pré-sessão;
+- roteiro de introdução;
+- oito tarefas práticas;
+- campos de observação durante as tarefas;
+- 10 itens SUS em português;
+- fórmula de cálculo do SUS;
+- perguntas abertas pós-teste;
+- estrutura sugerida para Google Forms;
+- cuidados éticos e de escopo;
+- plano de análise dos resultados.
+
+**Tarefas práticas propostas:**  
+- Tarefa 1 — Entrar no app.
+- Tarefa 2 — Identificar o próximo medicamento.
+- Tarefa 3 — Registrar medicamento como tomado.
+- Tarefa 4 — Desfazer ação.
+- Tarefa 5 — Ver agenda completa do dia.
+- Tarefa 6 — Corrigir registro pelo detalhe.
+- Tarefa 7 — Consultar histórico.
+- Tarefa 8 — Ver perfil e sair.
+
+**Métricas e observações sugeridas:**  
+- conclusão sem ajuda, com ajuda ou não concluída;
+- nível de ajuda;
+- hesitações;
+- erros de toque;
+- dúvidas verbalizadas;
+- comentários espontâneos;
+- pontos positivos notados;
+- tempo aproximado, opcional.
+
+**Estrutura sugerida para Google Forms:**  
+- Seção 1 — Termo e contexto da avaliação.
+- Seção 2 — Perfil geral do participante.
+- Seção 3 — Tarefas realizadas, preenchida pelo pesquisador.
+- Seção 4 — SUS.
+- Seção 5 — Perguntas abertas.
+- Seção 6 — Comentários finais.
+
+**Cuidados éticos e de escopo:**  
+- não coletar dados reais de saúde;
+- não coletar nome completo, CPF, endereço ou dados clínicos;
+- usar identificadores anônimos, como P01, P02 e P03;
+- deixar claro que a avaliação é da interface;
+- deixar claro que os dados do app são fictícios;
+- explicar que o app não substitui profissional de saúde;
+- permitir interrupção da participação a qualquer momento;
+- tratar os achados como percepções de usabilidade, não como evidência clínica.
+
+**Plano de análise sugerido:**  
+- tabela anonimizada de participantes;
+- tabela de tarefas por participante;
+- taxa de conclusão por tarefa;
+- taxa de conclusão autônoma;
+- principais dificuldades observadas;
+- pontuação SUS individual;
+- média e desvio-padrão do SUS;
+- agrupamento qualitativo das perguntas abertas;
+- relação dos achados com heurísticas de Nielsen;
+- limitações da avaliação;
+- recomendações de melhoria.
+
+**Observações para análise posterior no TCC:**  
+Esta interação é importante porque transforma a interface desenvolvida em um artefato avaliável. O protocolo conecta a parte prática do app com a metodologia do TCC, permitindo avaliar a interface por meio de tarefas reais, observações qualitativas e uma medida padronizada de percepção de usabilidade.
+
+O protocolo também reforça a delimitação do trabalho: a avaliação é da interface, não da eficácia médica. Essa distinção é essencial para evitar interpretações inadequadas sobre o escopo do app.
+
+Do ponto de vista metodológico, a combinação de tarefas práticas, SUS e perguntas abertas é adequada para um estudo exploratório. As tarefas ajudam a observar problemas concretos de interação, o SUS fornece uma medida quantitativa comparável, e as perguntas abertas ajudam a interpretar as notas e identificar percepções subjetivas.
+
+**Possíveis riscos ou limitações:**  
+- A amostra sugerida é pequena e de conveniência.
+- Os participantes não precisam ser pacientes reais, então o uso não representa uma situação clínica real.
+- O ambiente é controlado e de curta duração.
+- O uso de dados fictícios pode reduzir a naturalidade da experiência.
+- O pesquisador também é desenvolvedor, o que pode introduzir viés de observação.
+- O SUS mede percepção de usabilidade, não eficácia clínica.
+- O roteiro precisa evitar ajudar demais o participante, para não mascarar problemas reais de interface.
+- A tarefa de histórico deve ser ajustada para refletir exatamente os termos atuais da interface.
