@@ -63,24 +63,18 @@ const MedicationContext = createContext<MedicationContextValue | null>(null);
 
 interface MedicationProviderProps {
   children: ReactNode;
-  // Repository é injetável — `SupabaseMedicationRepository` é o
-  // default em produção; testes/mocks podem passar
-  // `mockMedicationRepository` para isolar a UI do banco.
-  repository?: MedicationRepository;
 }
 
-export function MedicationProvider({
-  children,
-  repository,
-}: MedicationProviderProps) {
+export function MedicationProvider({ children }: MedicationProviderProps) {
   const { user } = useAuth();
   const patientId = user?.id ?? null;
 
-  // Default em useMemo para que repository não troque de identidade a
-  // cada render (caso contrário o effect de load dispararia em loop).
+  // Instância única do repositório, memoizada para não trocar de
+  // identidade a cada render (caso contrário o effect de load
+  // dispararia em loop).
   const resolvedRepository = useMemo<MedicationRepository>(
-    () => repository ?? new SupabaseMedicationRepository(),
-    [repository],
+    () => new SupabaseMedicationRepository(),
+    [],
   );
 
   const [medications, setMedications] = useState<Medication[]>([]);

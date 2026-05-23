@@ -67,7 +67,6 @@ flowchart TD
     subgraph DATA["Acesso a dados"]
         REPO["repositories/<br/>MedicationRepository (interface)"]
         SUP["SupabaseMedicationRepository"]
-        MOCK["MockMedicationRepository"]
         ADP["adapters/<br/>supabaseClient.ts"]
     end
     subgraph DOMAIN["Domínio (tipos em inglês)"]
@@ -81,7 +80,6 @@ flowchart TD
     H --> SVC
     CTX --> REPO
     REPO -.implementado por.-> SUP
-    REPO -.implementado por.-> MOCK
     SUP --> ADP
     ADP --> EXT
     SVC --> DOM
@@ -93,18 +91,20 @@ flowchart TD
 
 | Camada | Importa | **Não** importa |
 |---|---|---|
-| `screens/` | hooks, components, theme, navigation | mocks, services, repositories, `expo-*` |
-| `components/` | theme, domain | screens, hooks, mocks, `expo-*` |
-| `hooks/` | services, contexts, domain | mocks, adapters, `expo-*` |
-| `services/` | domain | mocks, hooks, contexts, adapters |
+| `screens/` | hooks, components, theme, navigation | services, repositories, `expo-*` |
+| `components/` | theme, domain | screens, hooks, `expo-*` |
+| `hooks/` | services, contexts, domain | adapters, `expo-*` |
+| `services/` | domain | hooks, contexts, adapters |
 | `repositories/` | domain, mappers, adapter | services, contexts, hooks |
-| `contexts/` | repositories, domain, adapter | screens, mocks |
+| `contexts/` | repositories, domain, adapter | screens |
 | `adapters/` | `expo-*`, `supabase-js`, domain | todo o resto |
 
-> **Por que isso importa para o TCC:** essa separação é o que permite trocar o
-> backend (Supabase ↔ mock em memória) sem tocar em nenhuma tela — ver §7 e §9.
-> É também o que mantém a regra de negócio (cálculo de status, histórico) em
-> funções puras fáceis de raciocinar e, futuramente, testar.
+> **Por que isso importa para o TCC:** essa separação mantém a regra de negócio
+> independente do backend — o `contexts/` conversa com a interface
+> `MedicationRepository`, não com o `supabase-js` (ver §6), então trocar ou
+> adicionar uma fonte de dados não exige tocar em nenhuma tela. E mantém a regra
+> de negócio (cálculo de status, histórico) em funções puras (`services/`),
+> fáceis de raciocinar e, futuramente, testar.
 
 ---
 
@@ -334,7 +334,7 @@ Pontos relevantes do schema:
   para as consultas de listagem e da janela de 30 dias.
 - **Trigger `set_updated_at`** mantém `updated_at` em todas as tabelas.
 - **`weekdays`** existe no schema para evolução futura; a v1 modela horários como
-  linhas individuais e o domínio assume frequência diária (ver §7.2).
+  linhas individuais e o domínio assume frequência diária (ver §6.3).
 
 ### 4.2 Criação automática de profile
 
@@ -463,9 +463,12 @@ export interface MedicationRepository {
 }
 ```
 
-Duas implementações: `SupabaseMedicationRepository` (produção) e
-`MockMedicationRepository` (dev/teste, §9). Trocar uma pela outra não exige mudar
-nenhuma tela, hook ou service.
+Hoje há **uma única implementação**, `SupabaseMedicationRepository`. Manter o
+acesso a dados atrás da interface mantém o `contexts/` desacoplado do
+`supabase-js` (o provider depende do contrato, não da classe concreta) e
+concentra todo o I/O num só lugar — se um dia for preciso um dublê de teste ou
+outra fonte, basta adicionar uma implementação sem tocar em telas, hooks ou
+services.
 
 ### 6.2 Como as consultas isolam o usuário
 
@@ -572,20 +575,7 @@ são serializadas para evitar corrida entre marcar e desfazer.
 
 ---
 
-## 8. Camada de mocks / fallback
-
-`MockMedicationRepository` implementa a mesma interface `MedicationRepository`
-inteiramente em memória, a partir dos dados de `src/mocks/`. Como os mocks são
-**imutáveis em runtime**, ele os **clona** ao inicializar e muta a cópia. Serve
-para rodar o app sem Supabase (desenvolvimento, demonstração offline, futuros
-testes). As telas e hooks **nunca** importam mocks diretamente — só enxergam a
-interface; basta injetar a implementação desejada no `MedicationProvider`. É o
-Repository Pattern (§6.1) pagando dividendo: a fonte de dados é um detalhe
-plugável.
-
----
-
-## 9. Escopo, limitações e evolução
+## 8. Escopo, limitações e evolução
 
 **Caráter não-clínico (invariante do projeto).** O app é **registro pessoal**: a
 ação do usuário não valida consumo nem reflete adesão clínica. Não há prescrição,
@@ -597,14 +587,20 @@ automatizados nesta fase; sem notificações locais/push; sem cadastro pelo app
 (3 personas fixas via seed); histórico limitado a 30 dias; sem gráficos
 complexos; sem dark mode.
 
-**Nota sobre a evolução do artefato.** O `CLAUDE.md` ainda lista backend, auth e
-persistência como "fora de escopo" — esse texto reflete a **v1 inicial só com
-mocks**. O código evoluiu desde então e hoje integra Supabase (auth + 4 tabelas +
-RLS) e o Repository Pattern aqui descritos. Essa trajetória — de protótipo com
-dados em memória para um backend real isolado por RLS — é em si um dado do estudo
-exploratório sobre o uso do Claude no desenvolvimento, e vale ser narrada como
-tal no TCC. (Este documento apenas registra a observação; não altera o
-`CLAUDE.md`.)
+**Nota sobre a evolução do artefato.** A **v1 inicial era só com mocks** —
+dados fixos em memória (`src/mocks/`) servidos por um `MockMedicationRepository`,
+sem backend. Quando o app passou a persistir no Supabase, o
+`SupabaseMedicationRepository` virou a única fonte de verdade e esse andaime de
+mocks deixou de ser usado; ele foi **removido nesta limpeza** para não deixar
+código morto. Essa trajetória — de protótipo com dados em memória para um backend
+real isolado por RLS — é em si um dado do estudo exploratório sobre o uso do
+Claude no desenvolvimento, e vale ser narrada como tal no TCC.
+
+> O `CLAUDE.md` ainda descreve `src/mocks/` como uma camada e lista
+> backend/auth/persistência como "fora de escopo" — texto herdado da v1, hoje
+> desatualizado. O `README.md` também cita a pasta `mocks/` e o
+> `MockMedicationRepository` na estrutura do projeto. Este documento não edita
+> esses arquivos; convém reconciliá-los à parte.
 
 ---
 
@@ -617,7 +613,7 @@ tal no TCC. (Este documento apenas registra a observação; não altera o
 | Contextos | `src/contexts/AuthProvider.tsx`, `src/contexts/MedicationProvider.tsx` |
 | Hooks | `src/hooks/use{TodayMedications,MedicationList,MedicationDetail,MedicationHistory,CurrentPatient,Auth,Now}.ts` |
 | Services | `src/services/MedicationService.ts` |
-| Repositories | `src/repositories/{MedicationRepository,SupabaseMedicationRepository,MockMedicationRepository}.ts`, `mappers/supabaseMedicationMapper.ts` |
+| Repositories | `src/repositories/{MedicationRepository,SupabaseMedicationRepository}.ts`, `mappers/supabaseMedicationMapper.ts` |
 | Adapter | `src/adapters/supabaseClient.ts` |
 | Domínio | `src/domain/models/*`, `src/domain/enums/*` |
 | Theme | `src/theme/{colors,typography,spacing,radius}.ts` |

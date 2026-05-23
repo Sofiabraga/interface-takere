@@ -94,8 +94,9 @@ export function mapLog(row: MedicationLogRow): MedicationLog {
   };
 }
 
-// 'HH:MM:SS' → 'HH:MM'. Mantém compatibilidade com `MedicationSchedule.time`
-// como vem do mock e como é exibido nos componentes.
+// 'HH:MM:SS' → 'HH:MM'. `MedicationSchedule.time` é exibido como
+// 'HH:MM' nos componentes; o segundo do tipo `time` do Postgres é
+// descartado.
 function trimSeconds(time: string): string {
   return time.length >= 5 ? time.slice(0, 5) : time;
 }
